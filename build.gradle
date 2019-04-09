@@ -1,0 +1,46 @@
+apply plugin: 'java'
+apply plugin: 'application'
+
+repositories {
+	jcenter() 
+	maven {
+		url "https://dl.bintray.com/mtschach/Mss"
+	}
+}
+
+dependencies {
+   compile 'Mss:MssLogging:latest.release'
+   compile 'Mss:MssUtils:latest.release'
+   compile 'Mss:MssConfigTools:latest.release'
+   compile group: 'commons-cli', name: 'commons-cli', version: '1.4'
+   testCompile 'junit:junit:4.12'
+}
+
+
+mainClassName = 'de.mss.autologout.app.AutoLogout'
+
+
+jar {
+	dependsOn 'normalJar'
+	jar.baseName = project.name + 'Full'
+	manifest {
+		attributes(
+			'Class-Path': configurations.compileClasspath.files.collect {"$it.name"}.join(' '),
+			'Main-Class': project.mainClassName
+      )
+	}
+   from {
+		configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+   }
+}
+
+task normalJar(type: Jar) {
+	manifest {
+		attributes(
+			'Class-Path': configurations.compileClasspath.files.collect {"$it.name"}.join(' '),
+			'Main-Class': project.mainClassName
+      )
+	}
+   from (sourceSets.main.output)
+}
+

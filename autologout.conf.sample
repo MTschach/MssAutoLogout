@@ -1,0 +1,36 @@
+<de>
+   <mss>
+      <autologout>
+         <Windows>
+            <username>cmd.exe /c echo %username%</username>
+            <notify>cmd.exe /c echo "{~MESSAGE~}"</notify>
+            <logoff>cmd.exe /c echo "Logoff"</logoff>
+         </Windows>
+         <Linux>
+            <username></username>
+            <notify></notify>
+            <logoff></logoff>
+         </Linux>
+         <run>
+            <interval>30</interval>
+         </run>
+         <dbfile>autologout.db</dbfile>
+         <minutes_first_info>10</minutes_first_info>
+         <minutes_second_info>5</minutes_second_info>
+         <minutes_first_warning>5</minutes_first_warning>
+         <minutes_force_logoff>10</minutes_force_logoff>
+         <sampleuser1>
+            <minutes>
+               <daily>60</daily>
+               <weekly>450</weekly>
+            </minutes>
+         </sampleuser1>
+         <sampleuser2>// without timer
+            <minutes>
+               <daily>-1</daily>
+               <weekly>-1</weekly>
+            </minutes>
+         </sampleuser2>
+      </autologout>
+   </mss>
+</de>
