@@ -16,10 +16,11 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import de.mss.configtools.ConfigFile;
 import de.mss.configtools.XmlConfigFile;
-import de.mss.logging.LoggingFactory;
 import de.mss.utils.DateTimeTools;
 import de.mss.utils.Tools;
 import de.mss.utils.exception.MssException;
@@ -47,6 +48,17 @@ public class AutoLogout {
 
    private LogoutCounter       dailyCounter           = null;
    private LogoutCounter       weeklyCounter          = null;
+
+
+   private static Logger logger = null;
+
+
+   private static Logger getLogger() {
+      if (logger == null)
+         logger = LogManager.getLogger("MssAutoLogout");
+      
+      return logger;
+   }
 
 
    public AutoLogout(String[] args) throws ParseException {
@@ -147,16 +159,16 @@ public class AutoLogout {
 
 
    private void addToCounter() throws IOException {
-      if (this.dailyCounter != null) {
+      if (this.dailyCounter != null && this.dailyCounter.getMaxMinutes() > 0) {
          this.dailyCounter.addSeconds(this.checkInterval);
          SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
          this.dbFile.insertKeyValue(this.lastUserName + ".D" + sdf.format(new java.util.Date()), "" + this.dailyCounter.getCurrentMinutes());
+         this.dbFile.writeConfig(this.cfgFile.getValue(CFG_KEY_DB_FILE, "autologout.db"));
       }
-      if (this.weeklyCounter != null) {
+      if (this.weeklyCounter != null && this.weeklyCounter.getMaxMinutes() > 0) {
          this.weeklyCounter.addSeconds(this.checkInterval);
       }
 
-      this.dbFile.writeConfig(this.cfgFile.getValue(CFG_KEY_DB_FILE, "autologout.db"));
    }
 
 
@@ -210,7 +222,7 @@ public class AutoLogout {
          line = br.readLine();
       }
       catch (IOException e) {
-         e.printStackTrace();
+         getLogger().error("Read line failed", e);
       }
 
       return line;
@@ -232,7 +244,7 @@ public class AutoLogout {
          return Runtime.getRuntime().exec(cmd);
       }
       catch (IOException e) {
-         e.printStackTrace();
+         getLogger().error("Exec '" + cmd + "' failed", e);
       }
       return null;
    }
@@ -254,7 +266,7 @@ public class AutoLogout {
          Thread.sleep(waitFor);
       }
       catch (Exception e) {
-         LoggingFactory.getLogger("default").logError("", e);
+         getLogger().error("", e);
       }
    }
 
@@ -265,7 +277,7 @@ public class AutoLogout {
          al.run();
       }
       catch (Exception e) {
-         LoggingFactory.getLogger("default").logError("", e);
+         getLogger().error("", e);
       }
    }
 }

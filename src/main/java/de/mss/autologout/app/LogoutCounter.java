@@ -31,6 +31,11 @@ public class LogoutCounter {
    }
 
 
+   public int getMaxMinutes() {
+      return this.maxMinutes;
+   }
+
+
    public int getMinutesFirstInfo() {
       return this.minutesFirstInfo;
    }

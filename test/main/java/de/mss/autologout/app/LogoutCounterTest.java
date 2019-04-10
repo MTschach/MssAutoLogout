@@ -22,6 +22,7 @@ public class LogoutCounterTest extends TestCase {
 
    @Test
    public void testInit() {
+      assertEquals("Max Minutes", Integer.valueOf(30), Integer.valueOf(this.classUnderTest.getMaxMinutes()));
       assertEquals("Minutes First Info", Integer.valueOf(10), Integer.valueOf(this.classUnderTest.getMinutesFirstInfo()));
       assertEquals("Minutes Second Info", Integer.valueOf(5), Integer.valueOf(this.classUnderTest.getMinutesSecondInfo()));
       assertEquals("Minutes First Warning", Integer.valueOf(5), Integer.valueOf(this.classUnderTest.getMinutesFirstWarning()));
