@@ -30,7 +30,7 @@ public class AutoLogout {
 
    private static final String CMD_OPTION_CONFIG_FILE = "config";
 
-   private static final String CFG_KEY_BASE           = "de.mss.autologout";
+   public static final String  CFG_KEY_BASE           = "de.mss.autologout";
    private static final String CFG_KEY_RUN_INTERVAL   = CFG_KEY_BASE + ".run.interval";
    private static final String CFG_KEY_DB_FILE        = CFG_KEY_BASE + ".dbfile";
 
@@ -48,6 +48,8 @@ public class AutoLogout {
 
    private LogoutCounter       dailyCounter           = null;
    private LogoutCounter       weeklyCounter          = null;
+
+   private boolean             isRunning              = true;
 
 
    private static Logger logger = null;
@@ -89,8 +91,23 @@ public class AutoLogout {
    }
    
 
+   public ConfigFile getConfig() {
+      return this.cfgFile;
+   }
+
+
+   public void stop() {
+      this.isRunning = false;
+   }
+
+
    public void run() throws MssException, IOException {
       long checkIntervalMillis = this.checkInterval * 1000;
+
+      AutoLogoutListener all = new AutoLogoutListener(this);
+      Thread t = new Thread(all);
+      t.start();
+
       while (checkRunning()) {
          long nextRun = System.currentTimeMillis() + checkIntervalMillis;
 
@@ -250,9 +267,8 @@ public class AutoLogout {
    }
 
 
-   private boolean checkRunning() {
-
-      return true;
+   public boolean checkRunning() {
+      return this.isRunning;
    }
    
    
