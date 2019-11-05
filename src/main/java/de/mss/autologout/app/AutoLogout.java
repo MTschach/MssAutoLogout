@@ -144,7 +144,7 @@ public class AutoLogout {
       }
       else if (lc.isFirstWarning(this.checkInterval)) {
          showInfoAndLogout(
-               "Deine " + lc.getName() + " Zeit läuft in " + (lc.getMinutesForceLogoff() - lc.getMinutesFirstWarning()) + " Minuten ab",
+               "Deine " + lc.getName() + " Zeit lï¿½uft in " + (lc.getMinutesForceLogoff() - lc.getMinutesFirstWarning()) + " Minuten ab",
                false);
          return true;
       }
@@ -153,11 +153,11 @@ public class AutoLogout {
          return true;
       }
       else if (lc.isSecondInfo(this.checkInterval)) {
-         showInfoAndLogout("Deine " + lc.getName() + " Zeit läuft in " + lc.getMinutesSecondInfo() + " Minuten ab", false);
+         showInfoAndLogout("Deine " + lc.getName() + " Zeit lï¿½uft in " + lc.getMinutesSecondInfo() + " Minuten ab", false);
          return true;
       }
       else if (lc.isFirstInfo(this.checkInterval)) {
-         showInfoAndLogout("Deine " + lc.getName() + " Zeit läuft in " + lc.getMinutesFirstInfo() + " Minuten ab", false);
+         showInfoAndLogout("Deine " + lc.getName() + " Zeit lï¿½uft in " + lc.getMinutesFirstInfo() + " Minuten ab", false);
          return true;
       }
 
@@ -204,10 +204,10 @@ public class AutoLogout {
       this.lastUserName = user;
       this.dailyCounter = new LogoutCounter(
             this.cfgFile.getValue(CFG_KEY_BASE + "." + user + DB_KEY_DAILY_MINUTES, BigInteger.valueOf(30)).intValue(),
-            "tägliche");
+            "tÃ¤gliche");
       this.weeklyCounter = new LogoutCounter(
             this.cfgFile.getValue(CFG_KEY_BASE + "." + user + DB_KEY_WEEKLY_MINUTES, BigInteger.valueOf(240)).intValue(),
-            "wöchentliche");
+            "wÃ¶chentliche");
 
       java.util.Date checkDate = new java.util.Date();
       SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
@@ -225,7 +225,12 @@ public class AutoLogout {
 
 
    private String getLoggedInUser() {
-      return runCommandAndReturnCmdOutput("username");
+      String userName = runCommandAndReturnCmdOutput("username");
+      
+      if (userName != null && this.cfgFile.getValue(CFG_KEY_BASE + "." + userName + DB_KEY_DAILY_MINUTES, BigInteger.valueOf(30)).intValue() <= 0)
+    	  return null;
+      
+      return userName;
    }
 
 
@@ -242,7 +247,7 @@ public class AutoLogout {
          getLogger().error("Read line failed", e);
       }
 
-      return line;
+       return line;
    }
 
 
