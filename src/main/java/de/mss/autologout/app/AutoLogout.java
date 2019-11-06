@@ -16,6 +16,7 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -104,6 +105,8 @@ public class AutoLogout {
    public void run() throws MssException, IOException {
       long checkIntervalMillis = this.checkInterval * 1000;
 
+      getLogger().log(Level.ALL, "AutoLogout is up and running");
+      
       AutoLogoutListener all = new AutoLogoutListener(this);
       Thread t = new Thread(all);
       t.start();
@@ -119,6 +122,8 @@ public class AutoLogout {
 
          waitUntil(nextRun);
       }
+      
+      getLogger().log(Level.ALL, "AutoLogout is shutting down");
    }
 
 
@@ -167,6 +172,8 @@ public class AutoLogout {
 
 
    private void showInfoAndLogout(String info, boolean logout) {
+	  getLogger().debug("showInfoAndLogout for user " + this.lastUserName + " Info: '" + info + "'; logout: " + logout);
+	   
       Map<String, String> params = new HashMap<>();
       params.put("MESSAGE", info);
       runCommand("notify", params);
