@@ -57,8 +57,9 @@ public class AutoLogout {
 
 
    private static Logger getLogger() {
-      if (logger == null)
-         logger = LogManager.getLogger("MssAutoLogout");
+      if (logger == null) {
+         logger = LogManager.getLogger(AutoLogout.class);
+      }
       
       return logger;
    }
@@ -186,7 +187,7 @@ public class AutoLogout {
       if (this.dailyCounter != null && this.dailyCounter.getMaxMinutes() > 0) {
          this.dailyCounter.addSeconds(this.checkInterval);
          SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
-         this.dbFile.insertKeyValue(this.lastUserName + ".D" + sdf.format(new java.util.Date()), "" + this.dailyCounter.getCurrentMinutes());
+         this.dbFile.insertKeyValue("autologout." + this.lastUserName + ".D" + sdf.format(new java.util.Date()), "" + this.dailyCounter.getCurrentMinutes());
          this.dbFile.writeConfig(this.cfgFile.getValue(CFG_KEY_DB_FILE, "autologout.db"));
       }
       if (this.weeklyCounter != null && this.weeklyCounter.getMaxMinutes() > 0) {
@@ -219,11 +220,11 @@ public class AutoLogout {
       java.util.Date checkDate = new java.util.Date();
       SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
 
-      int minutesDaily = this.dbFile.getValue(user + ".D" + sdf.format(checkDate), BigInteger.ZERO).intValue();
+      int minutesDaily = this.dbFile.getValue("autologout." + user + ".D" + sdf.format(checkDate), BigInteger.ZERO).intValue();
       int minutesWeekly = minutesDaily;
       for (int i = 1; i <= 7; i++ ) {
          checkDate = DateTimeTools.addDate(checkDate, -1, Calendar.DAY_OF_MONTH);
-         minutesWeekly += this.dbFile.getValue(user + ".D" + sdf.format(checkDate), BigInteger.ZERO).intValue();
+         minutesWeekly += this.dbFile.getValue("autologout." + user + ".D" + sdf.format(checkDate), BigInteger.ZERO).intValue();
       }
 
       this.dailyCounter.addMinutes(minutesDaily);
@@ -268,9 +269,17 @@ public class AutoLogout {
          for (Entry<String, String> entry : params.entrySet())
             cmd = cmd.replaceAll("\\{~" + entry.getKey() + "~\\}", entry.getValue());
       }
+      
+      System.out.println("Exec '" + cmd + "'");
 
       try {
-         return Runtime.getRuntime().exec(cmd);
+         Process p = Runtime.getRuntime().exec(cmd);
+         if (p != null)
+         try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getErrorStream()))) {
+              System.out.println(br.readLine());
+          }
+
+         return p;
       }
       catch (IOException e) {
          getLogger().error("Exec '" + cmd + "' failed", e);
