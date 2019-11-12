@@ -107,6 +107,12 @@ public class AutoLogout {
       long checkIntervalMillis = this.checkInterval * 1000;
 
       getLogger().log(Level.ALL, "AutoLogout is up and running");
+      getLogger().log(Level.ALL, "my All-Message");
+      getLogger().info("my Info Message");
+      getLogger().warn("my Warn Message");
+      getLogger().debug("my Debug Message");
+      getLogger().error("my Error Message");
+      getLogger().trace("my Trace Message");
       
       AutoLogoutListener all = new AutoLogoutListener(this);
       Thread t = new Thread(all);
@@ -265,19 +271,26 @@ public class AutoLogout {
       if (!Tools.isSet(cmd))
          return null;
 
+      String[] cmds = cmd.split(" ");
+
       if (params != null) {
+         for (Entry<String, String> entry : params.entrySet())
+            for (int i = 0; i < cmds.length; i++ )
+               cmds[i] = cmds[i].replaceAll("\\{~" + entry.getKey() + "~\\}", entry.getValue());
+
          for (Entry<String, String> entry : params.entrySet())
             cmd = cmd.replaceAll("\\{~" + entry.getKey() + "~\\}", entry.getValue());
       }
       
-      System.out.println("Exec '" + cmd + "'");
+      getLogger().debug("Exec '" + cmd + "'");
 
       try {
-         Process p = Runtime.getRuntime().exec(cmd);
-         if (p != null)
-         try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getErrorStream()))) {
-              System.out.println(br.readLine());
-          }
+         Process p = Runtime.getRuntime().exec(cmds);
+         if (p != null) {
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getErrorStream()))) {
+               getLogger().error(br.readLine());
+            }
+         }
 
          return p;
       }
