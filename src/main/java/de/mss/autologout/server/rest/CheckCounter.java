@@ -9,9 +9,9 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Request;
 
+import de.mss.autologout.param.CheckCounterRequest;
+import de.mss.autologout.param.CheckCounterResponse;
 import de.mss.autologout.server.AutoLogoutWebService;
-import de.mss.autologout.server.CheckCounterRequest;
-import de.mss.autologout.server.CheckCounterResponse;
 import de.mss.net.webservice.WebServiceJsonDataBuilder;
 import de.mss.utils.Tools;
 import de.mss.utils.exception.MssException;
@@ -56,6 +56,7 @@ public class CheckCounter extends AutoLogoutWebService {
          if (req.getCheckInterval() == null)
             req.setCheckInterval(Integer.valueOf(30));
 
+         this.server.addToCounter(req.getUserName(), req.getCheckInterval().intValue());
          CheckCounterResponse resp = this.server.checkCounter(req.getUserName(), req.getCheckInterval().intValue());
 
          httpResponse.getWriter().write(new WebServiceJsonDataBuilder<CheckCounterResponse>().writeData(resp));

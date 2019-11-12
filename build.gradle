@@ -23,7 +23,7 @@ mainClassName = 'de.mss.autologout.app.AutoLogout'
 
 
 jar {
-   dependsOn 'normalJar'
+   dependsOn 'serverJar'
    jar.baseName = project.name + 'Full'
    manifest {
       attributes(
@@ -44,4 +44,33 @@ task normalJar(type: Jar) {
       )
    }
    from (sourceSets.main.output)
+}
+
+task serverJar(type: Jar) {
+   jar.baseName = project.name + 'Server'
+   manifest {
+      attributes(
+      'Class-Path': configurations.compileClasspath.files.collect {"$it.name"}.join(' '),
+      'Main-Class': 'de.mss.autologout.server.AutoLogoutServer'
+      )
+   }
+   from {
+      configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+   }
+   exclude ('de/mss/autologout/client/**')
+}
+
+
+task clientJar(type: Jar) {
+   jar.baseName = project.name + 'Client'
+   manifest {
+      attributes(
+      'Class-Path': configurations.compileClasspath.files.collect {"$it.name"}.join(' '),
+      'Main-Class': 'de.mss.autologout.client.AutoLogoutClient'
+      )
+   }
+   from {
+      configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+   }
+   exclude ('de/mss/autologout/server/**')
 }

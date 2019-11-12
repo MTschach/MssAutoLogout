@@ -1,4 +1,4 @@
-package de.mss.autologout.server;
+package de.mss.autologout.param;
 
 import de.mss.net.webservice.WebServiceResponse;
 

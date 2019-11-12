@@ -18,6 +18,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import de.mss.autologout.app.LogoutCounter;
+import de.mss.autologout.param.CheckCounterResponse;
 import de.mss.configtools.ConfigFile;
 import de.mss.configtools.XmlConfigFile;
 import de.mss.net.webservice.WebService;

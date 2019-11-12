@@ -1,4 +1,4 @@
-package de.mss.autologout.server;
+package de.mss.autologout.param;
 
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;

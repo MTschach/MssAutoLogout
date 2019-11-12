@@ -1,0 +1,20 @@
+<de>
+   <mss>
+      <autologout>
+         <Windows>
+            <username>cmd.exe /c echo %username%</username>
+            <notify>cmd.exe /c echo "{~MESSAGE~}"</notify>
+            <logoff>cmd.exe /c echo "Logoff"</logoff>
+         </Windows>
+         <Linux>
+            <username></username>
+            <notify></notify>
+            <logoff></logoff>
+         </Linux>
+         <run>
+            <interval>30</interval>
+         </run>
+         <url>http://localhost:21080</url>
+      </autologout>
+   </mss>
+</de>
