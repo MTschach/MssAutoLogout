@@ -1,5 +1,7 @@
 package de.mss.autologout.server.rest;
 
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
@@ -8,6 +10,10 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Request;
 
 import de.mss.autologout.server.AutoLogoutWebService;
+import de.mss.autologout.server.CheckCounterRequest;
+import de.mss.autologout.server.CheckCounterResponse;
+import de.mss.net.webservice.WebServiceJsonDataBuilder;
+import de.mss.utils.Tools;
 import de.mss.utils.exception.MssException;
 
 public class CheckCounter extends AutoLogoutWebService {
@@ -17,7 +23,7 @@ public class CheckCounter extends AutoLogoutWebService {
 
    @Override
    public String getPath() {
-      return "/{username}/checkCounter";
+      return "/{userName}/checkCounter";
    }
 
 
@@ -30,11 +36,39 @@ public class CheckCounter extends AutoLogoutWebService {
    @Override
    public int get(
          String loggingId,
-         Map<String, String> pathParams,
+         Map<String, String> params,
          Request baseRequest,
          HttpServletRequest httpRequest,
          HttpServletResponse httpResponse)
          throws MssException {
-      return HttpServletResponse.SC_NOT_FOUND;
+
+      WebServiceJsonDataBuilder<CheckCounterRequest> in = new WebServiceJsonDataBuilder<>();
+
+      try {
+         CheckCounterRequest req = in.parseData(params, new CheckCounterRequest());
+
+         if (!Tools.isSet(req.getUserName()))
+            throw new MssException(de.mss.utils.exception.ErrorCodes.ERROR_INVALID_PARAM, "no username given");
+
+         if (req.getCheckInterval() == null)
+            throw new MssException(de.mss.utils.exception.ErrorCodes.ERROR_INVALID_PARAM, "no check interval  given");
+
+         if (req.getCheckInterval() == null)
+            req.setCheckInterval(Integer.valueOf(30));
+
+         CheckCounterResponse resp = this.server.checkCounter(req.getUserName(), req.getCheckInterval().intValue());
+
+         httpResponse.getWriter().write(new WebServiceJsonDataBuilder<CheckCounterResponse>().writeData(resp));
+         httpResponse.getWriter().flush();
+         httpResponse.getWriter().close();
+
+         return HttpServletResponse.SC_OK;
+      }
+      catch (MssException e) {
+         throw e;
+      }
+      catch (IllegalAccessException | InvocationTargetException | IOException e) {
+         throw new MssException(de.mss.utils.exception.ErrorCodes.ERROR_UNABLE_TO_EXECUTE_REQUEST, e, "error while processing checkCounter request");
+      }
    }
 }

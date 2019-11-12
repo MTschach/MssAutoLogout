@@ -27,13 +27,16 @@ import de.mss.utils.exception.MssException;
 
 public class AutoLogoutServer extends WebServiceServer {
 
+   private static final String            DB_BASE_KEY            = "autologout.";
    private static final String CMD_OPTION_CONFIG_FILE = "config";
    public static final String  CFG_KEY_BASE           = "de.mss.autologout";
-   private static final String CFG_KEY_RUN_INTERVAL   = CFG_KEY_BASE + ".run.interval";
    private static final String CFG_KEY_DB_FILE        = CFG_KEY_BASE + ".dbfile";
 
    private static final String DB_KEY_DAILY_MINUTES   = ".minutes.daily";
    private static final String DB_KEY_WEEKLY_MINUTES  = ".minutes.weekly";
+
+   private static final SimpleDateFormat  DB_DATE_FORMAT         = new SimpleDateFormat("yyyyMMdd");
+   private static final SimpleDateFormat  DB_DATETIME_FORMAT     = new SimpleDateFormat("yyyyMMddHHmmssSSS");
 
    private Map<String, AutoLogoutCounter> counterMap             = new HashMap<>();
 
@@ -112,8 +115,8 @@ public class AutoLogoutServer extends WebServiceServer {
 
       if (dailyCounter != null && dailyCounter.getMaxMinutes() > 0) {
          dailyCounter.addSeconds(checkInterval);
-         SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
-         this.dbFile.insertKeyValue("autologout." + userName + ".D" + sdf.format(new java.util.Date()), "" + dailyCounter.getCurrentMinutes());
+         this.dbFile
+               .insertKeyValue(DB_BASE_KEY + userName + ".D" + DB_DATE_FORMAT.format(new java.util.Date()), "" + dailyCounter.getCurrentMinutes());
          try {
             this.dbFile.writeConfig(getConfigFile().getValue(CFG_KEY_DB_FILE, "autologout.db"));
          }
@@ -188,9 +191,8 @@ public class AutoLogoutServer extends WebServiceServer {
             "wöchentliche");
 
       java.util.Date checkDate = new java.util.Date();
-      SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
 
-      int minutesDaily = this.dbFile.getValue("autologout." + userName + ".D" + sdf.format(checkDate), BigInteger.ZERO).intValue();
+      int minutesDaily = this.dbFile.getValue(DB_BASE_KEY + userName + ".D" + DB_DATE_FORMAT.format(checkDate), BigInteger.ZERO).intValue();
       int minutesWeekly = minutesDaily;
       for (int i = 1; i <= 7; i++ ) {
          try {
@@ -199,7 +201,7 @@ public class AutoLogoutServer extends WebServiceServer {
          catch (MssException e) {
             getLogger().error("Error while loading user '" + userName + "'", e);
          }
-         minutesWeekly += this.dbFile.getValue("autologout." + userName + ".D" + sdf.format(checkDate), BigInteger.ZERO).intValue();
+         minutesWeekly += this.dbFile.getValue(DB_BASE_KEY + userName + ".D" + DB_DATE_FORMAT.format(checkDate), BigInteger.ZERO).intValue();
       }
 
       dailyCounter.addMinutes(minutesDaily);
@@ -209,13 +211,13 @@ public class AutoLogoutServer extends WebServiceServer {
    }
 
 
-   private static Integer getPort(CommandLine cmd, Logger logger) {
+   private static Integer getPort(CommandLine cmd, Logger log) {
       if (cmd.hasOption("port"))
          try {
             return new Integer(cmd.getOptionValue("port"));
          }
          catch (NumberFormatException nfe) {
-            logger.error("could not parse port", nfe);
+            log.error("could not parse port", nfe);
          }
 
       return Integer.valueOf(8080);
