@@ -1,4 +1,4 @@
-package de.mss.autologout.app;
+package de.mss.autologout.server;
 
 
 public class LogoutCounter {

@@ -17,8 +17,9 @@ import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import de.mss.autologout.app.LogoutCounter;
+import de.mss.autologout.param.AutoLogoutCounter;
 import de.mss.autologout.param.CheckCounterResponse;
+import de.mss.autologout.param.GetCounterResponse;
 import de.mss.configtools.ConfigFile;
 import de.mss.configtools.XmlConfigFile;
 import de.mss.net.webservice.WebService;
@@ -146,6 +147,18 @@ public class AutoLogoutServer extends WebServiceServer {
    }
 
 
+   public GetCounterResponse getCounter(String userName) {
+      GetCounterResponse resp = new GetCounterResponse();
+
+      if (!this.counterMap.containsKey(userName))
+         loadUser(userName);
+
+      resp.setCounterValues(this.counterMap.get(userName).getCounterValues());
+
+      return resp;
+   }
+
+
    private CheckCounterResponse checkCounter(LogoutCounter lc, int checkInterval) {
       if (lc == null)
          return null;
@@ -193,6 +206,9 @@ public class AutoLogoutServer extends WebServiceServer {
 
       java.util.Date checkDate = new java.util.Date();
 
+      AutoLogoutCounter alc = new AutoLogoutCounter();
+      alc.setCounterValues(new java.util.TreeMap<>());
+
       int minutesDaily = this.dbFile.getValue(DB_BASE_KEY + userName + ".D" + DB_DATE_FORMAT.format(checkDate), BigInteger.ZERO).intValue();
       int minutesWeekly = minutesDaily;
       for (int i = 1; i <= 7; i++ ) {
@@ -203,12 +219,20 @@ public class AutoLogoutServer extends WebServiceServer {
             getLogger().error("Error while loading user '" + userName + "'", e);
          }
          minutesWeekly += this.dbFile.getValue(DB_BASE_KEY + userName + ".D" + DB_DATE_FORMAT.format(checkDate), BigInteger.ZERO).intValue();
+         alc
+               .getCounterValues()
+               .put(
+                     DB_DATE_FORMAT.format(checkDate),
+                     this.dbFile.getValue(DB_BASE_KEY + userName + ".D" + DB_DATE_FORMAT.format(checkDate), BigInteger.ZERO));
       }
 
       dailyCounter.addMinutes(minutesDaily);
       weeklyCounter.addMinutes(minutesWeekly);
 
-      this.counterMap.put(userName, new AutoLogoutCounter(dailyCounter, weeklyCounter));
+      alc.setDailycounter(dailyCounter);
+      alc.setWeeklyCounter(weeklyCounter);
+
+      this.counterMap.put(userName, alc);
    }
 
 

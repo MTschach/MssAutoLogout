@@ -1,11 +1,18 @@
-package de.mss.autologout.server;
+package de.mss.autologout.param;
 
-import de.mss.autologout.app.LogoutCounter;
+import java.math.BigInteger;
+import java.util.Map;
+
+import de.mss.autologout.server.LogoutCounter;
 
 public class AutoLogoutCounter {
 
    private LogoutCounter dailyCounter;
    private LogoutCounter weeklyCounter;
+   private Map<String, BigInteger> counterValues;
+
+
+   public AutoLogoutCounter() {}
 
 
    public AutoLogoutCounter(LogoutCounter dailyCounter, LogoutCounter weeklyCounter) {
@@ -14,12 +21,12 @@ public class AutoLogoutCounter {
    }
 
 
-   private void setWeeklyCounter(LogoutCounter w) {
+   public void setWeeklyCounter(LogoutCounter w) {
       this.weeklyCounter = w;
    }
 
 
-   private void setDailycounter(LogoutCounter d) {
+   public void setDailycounter(LogoutCounter d) {
       this.dailyCounter = d;
    }
 
@@ -31,5 +38,15 @@ public class AutoLogoutCounter {
 
    public LogoutCounter getDailyCounter() {
       return this.dailyCounter;
+   }
+
+
+   public void setCounterValues(Map<String, BigInteger> l) {
+      this.counterValues = l;
+   }
+
+
+   public Map<String, BigInteger> getCounterValues() {
+      return this.counterValues;
    }
 }
