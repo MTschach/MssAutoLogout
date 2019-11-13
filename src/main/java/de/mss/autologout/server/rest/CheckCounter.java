@@ -23,7 +23,7 @@ public class CheckCounter extends AutoLogoutWebService {
 
    @Override
    public String getPath() {
-      return "/{userName}/checkCounter";
+      return "/{username}/checkCounter";
    }
 
 

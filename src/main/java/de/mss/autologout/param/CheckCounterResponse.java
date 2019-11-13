@@ -9,6 +9,7 @@ public class CheckCounterResponse extends WebServiceResponse {
    private String  headline    = null;
    private String  message     = null;
 
+   public CheckCounterResponse() {}
 
    public CheckCounterResponse(Boolean forceLogout, String headline, String message) {
       setForceLogout(forceLogout);

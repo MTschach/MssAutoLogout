@@ -18,7 +18,6 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import de.mss.autologout.app.AutoLogout;
 import de.mss.autologout.param.CheckCounterRequest;
 import de.mss.autologout.param.CheckCounterResponse;
 import de.mss.configtools.ConfigFile;
@@ -140,10 +139,11 @@ public class AutoLogoutClient {
       request.setUserName(this.lastUserName);
       request.setCheckInterval(Integer.valueOf(this.checkInterval));
       
-      CheckCounterResponse response = this.caller.call("", this.servers, "/v1/{username}/checkCounter", RestMethod.GET, request, 3);
+      CheckCounterResponse response = this.caller
+            .call("", this.servers, "v1/{username}/checkCounter", RestMethod.GET, request, new CheckCounterResponse(), 3);
       
       if (response == null)
-    	  return false;
+         return false;
       
       if (Tools.isSet(response.getMessage()))
          showInfo(response.getHeadline(), response.getMessage());
