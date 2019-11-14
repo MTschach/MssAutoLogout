@@ -69,6 +69,7 @@ public class AutoLogoutServer extends WebServiceServer {
 
    public AutoLogoutServer(ConfigFile c, Integer p) {
       super(c, p);
+      WebServiceServer.setLogger(getLogger());
    }
 
 
