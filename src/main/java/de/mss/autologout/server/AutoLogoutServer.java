@@ -3,8 +3,10 @@ package de.mss.autologout.server;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -19,6 +21,7 @@ import org.apache.logging.log4j.Logger;
 
 import de.mss.autologout.param.AutoLogoutCounter;
 import de.mss.autologout.param.CheckCounterResponse;
+import de.mss.autologout.param.GetAllCountersResponse;
 import de.mss.autologout.param.GetCounterResponse;
 import de.mss.configtools.ConfigFile;
 import de.mss.configtools.XmlConfigFile;
@@ -87,7 +90,7 @@ public class AutoLogoutServer extends WebServiceServer {
 
    @Override
    protected Map<String, WebService> getServiceList() {
-      Map<String, WebService> ret = loadWebServices(this.getClass().getClassLoader(), "de.mss.autologout.server.rest");
+      Map<String, WebService> ret = loadWebServices(this.getClass().getClassLoader(), "de.mss.autologout.server.rest", "/v1");
 
       for (Entry<String, WebService> entry : ret.entrySet()) {
          if (entry.getValue() instanceof AutoLogoutWebService)
@@ -136,6 +139,12 @@ public class AutoLogoutServer extends WebServiceServer {
       if (!this.counterMap.containsKey(userName))
          loadUser(userName);
 
+      String today = DB_DATE_FORMAT.format(new java.util.Date());
+      if (!today.equals(this.counterMap.get(userName).getDailyCounter().getDate())) {
+         this.counterMap.remove(userName);
+         loadUser(userName);
+      }
+
       ret = checkCounter(this.counterMap.get(userName).getWeeklyCounter(), checkInterval);
       if (ret != null)
          return ret;
@@ -157,6 +166,44 @@ public class AutoLogoutServer extends WebServiceServer {
       resp.setCounterValues(this.counterMap.get(userName).getCounterValues());
 
       return resp;
+   }
+
+
+   public GetAllCountersResponse getAllCounters() {
+      GetAllCountersResponse resp = new GetAllCountersResponse();
+
+      List<String> keys = new ArrayList<>();
+
+      resp.setCounterValues(new HashMap<>());
+      for (String key : getConfigFile().getKeys()) {
+         String[] k = key.split(".");
+         if (k.length == 2)
+            keys.add(k[2]);
+      }
+
+      for (String userName : keys) {
+         loadUser(userName);
+
+         resp.getCounterValues().put(userName, this.counterMap.get(userName).getCounterValues());
+      }
+
+      return resp;
+   }
+
+
+   public void setForceLogout(String userName, String user) {
+      if (!this.counterMap.containsKey(userName))
+         loadUser(userName);
+
+      AutoLogoutCounter counter = this.counterMap.get(userName);
+      int minutes = counter.getDailyCounter().getMaxMinutes() + counter.getDailyCounter().getMinutesForceLogoff();
+
+      this.dbFile
+            .insertKeyValue(
+                  DB_BASE_KEY + userName + ".D" + DB_DATETIME_FORMAT.format(new java.util.Date()) + user,
+                  "" + counter.getDailyCounter().getCurrentMinutes());
+      counter.getDailyCounter().reset();
+      addToCounter(userName, minutes * 60);
    }
 
 
@@ -228,6 +275,7 @@ public class AutoLogoutServer extends WebServiceServer {
       }
 
       dailyCounter.addMinutes(minutesDaily);
+      dailyCounter.setDate(DB_DATE_FORMAT.format(new java.util.Date()));
       weeklyCounter.addMinutes(minutesWeekly);
 
       alc.setDailycounter(dailyCounter);

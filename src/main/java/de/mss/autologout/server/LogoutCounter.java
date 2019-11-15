@@ -10,6 +10,7 @@ public class LogoutCounter {
    private int    minutesForceLogoff  = 10;
 
    private String name                = "";
+   private String date                = "";
 
    private int    maxSeconds          = 0;
    private int    currentSeconds      = 0;
@@ -56,6 +57,11 @@ public class LogoutCounter {
    }
 
 
+   public String getDate() {
+      return this.date;
+   }
+
+
    public void setMaxMinutes(int minutes) {
       this.maxMinutes = minutes;
       calculateTimers();
@@ -83,6 +89,11 @@ public class LogoutCounter {
    public void setMinutesForceLogoff(int minutes) {
       this.minutesForceLogoff = minutes;
       calculateTimers();
+   }
+
+
+   public void setDate(String d) {
+      this.date = d;
    }
 
 
