@@ -145,11 +145,11 @@ public class AutoLogoutServer extends WebServiceServer {
          loadUser(userName);
       }
 
-      ret = checkCounter(this.counterMap.get(userName).getWeeklyCounter(), checkInterval);
+      ret = checkCounter(this.counterMap.get(userName).getWeeklyCounter(), userName, checkInterval);
       if (ret != null)
          return ret;
 
-      ret = checkCounter(this.counterMap.get(userName).getDailyCounter(), checkInterval);
+      ret = checkCounter(this.counterMap.get(userName).getDailyCounter(), userName, checkInterval);
       if (ret != null)
          return ret;
 
@@ -207,7 +207,23 @@ public class AutoLogoutServer extends WebServiceServer {
    }
 
 
-   private CheckCounterResponse checkCounter(LogoutCounter lc, int checkInterval) {
+   public void resetCounter(String userName, String user) {
+      if (!this.counterMap.containsKey(userName))
+         loadUser(userName);
+
+      AutoLogoutCounter counter = this.counterMap.get(userName);
+      int minutes = 0;
+
+      this.dbFile
+            .insertKeyValue(
+                  DB_BASE_KEY + userName + ".D" + DB_DATETIME_FORMAT.format(new java.util.Date()) + user,
+                  "" + counter.getDailyCounter().getCurrentMinutes());
+      counter.getDailyCounter().reset();
+      addToCounter(userName, minutes * 60);
+   }
+
+
+   private CheckCounterResponse checkCounter(LogoutCounter lc, String userName, int checkInterval) {
       if (lc == null)
          return null;
 
@@ -217,24 +233,24 @@ public class AutoLogoutServer extends WebServiceServer {
          return new CheckCounterResponse(
                Boolean.FALSE,
                "Info",
-               "Deine " + lc.getName() + " Zeit ist in " + lc.getMinutesUntilFoceLogoff() + " Minuten abgelaufen");
+               "Hallo " + userName + "! Deine " + lc.getName() + " Zeit ist in " + lc.getMinutesUntilFoceLogoff() + " Minuten abgelaufen");
       } else if (lc.isFirstWarning(checkInterval)) {
          return new CheckCounterResponse(
                Boolean.FALSE,
                "Info",
-               "Deine " + lc.getName() + " Zeit l�uft in " + (lc.getMinutesForceLogoff() - lc.getMinutesFirstWarning()) + " Minuten ab");
+               "Hallo " + userName + "! Deine " + lc.getName() + " Zeit läuft in " + (lc.getMinutesForceLogoff() - lc.getMinutesFirstWarning()) + " Minuten ab");
       } else if (lc.isMinutesReached(checkInterval)) {
          return new CheckCounterResponse(Boolean.FALSE, "Info", "Deine " + lc.getName() + " Zeit ist abgelaufen");
       } else if (lc.isSecondInfo(checkInterval)) {
          return new CheckCounterResponse(
                Boolean.FALSE,
                "Info",
-               "Deine " + lc.getName() + " Zeit l�uft in " + lc.getMinutesSecondInfo() + " Minuten ab");
+               "Hallo " + userName + "! Deine " + lc.getName() + " Zeit läuft in " + lc.getMinutesSecondInfo() + " Minuten ab");
       } else if (lc.isFirstInfo(checkInterval)) {
          return new CheckCounterResponse(
                Boolean.FALSE,
                "Info",
-               "Deine " + lc.getName() + " Zeit l�uft in " + lc.getMinutesFirstInfo() + " Minuten ab");
+               "Hallo " + userName + "! Deine " + lc.getName() + " Zeit läuft in " + lc.getMinutesFirstInfo() + " Minuten ab");
       }
 
       return null;
@@ -288,7 +304,7 @@ public class AutoLogoutServer extends WebServiceServer {
    private static Integer getPort(CommandLine cmd, Logger log) {
       if (cmd.hasOption("port"))
          try {
-            return new Integer(cmd.getOptionValue("port"));
+            return Integer.valueOf(Integer.parseInt(cmd.getOptionValue("port")));
          }
          catch (NumberFormatException nfe) {
             log.error("could not parse port", nfe);

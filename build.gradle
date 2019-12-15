@@ -7,6 +7,15 @@ repositories {
    maven {
       url "https://dl.bintray.com/mtschach/Mss"
    }
+   maven {
+      url "https://oss.sonatype.org/content/repositories/snapshots"
+   }
+   maven {
+      url "https://mvnrepository.com/artifact/de.dfki.mary/marytts-runtime"
+   }
+   maven {
+      url "https://mvnrepository.com/artifact/de.dfki.mary/marytts-lang-de"
+   }
 }
 
 dependencies {
@@ -16,6 +25,9 @@ dependencies {
    compile 'Mss:MssConfigTools:latest.release'
    compile 'Mss:MssNetUtils:latest.release'
    compile group: 'commons-cli', name: 'commons-cli', version: '1.4'
+   compile group: 'net.sf.sociaal', name: 'freetts', version: '1.2.2'
+   compile group: 'de.dfki.mary', name: 'marytts-runtime', version: '5.2'
+   compile group: 'de.dfki.mary', name: 'marytts-lang-de', version: '5.2'
    testCompile 'junit:junit:4.12'
 }
 
