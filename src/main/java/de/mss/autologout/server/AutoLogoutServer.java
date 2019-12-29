@@ -228,7 +228,7 @@ public class AutoLogoutServer extends WebServiceServer {
          return null;
 
       if (lc.isForceLogoff()) {
-         return new CheckCounterResponse(Boolean.TRUE, "Info", "Deine " + lc.getName() + " Zeit ist abgelaufen, Du wirst automatisch abgemeldet");
+         return new CheckCounterResponse(Boolean.TRUE, "Info", "Hallo " + userName + "! Deine " + lc.getName() + " Zeit ist abgelaufen, Du wirst automatisch abgemeldet");
       } else if (lc.isMinutesUntilForceLogoff()) {
          return new CheckCounterResponse(
                Boolean.FALSE,
@@ -240,7 +240,7 @@ public class AutoLogoutServer extends WebServiceServer {
                "Info",
                "Hallo " + userName + "! Deine " + lc.getName() + " Zeit läuft in " + (lc.getMinutesForceLogoff() - lc.getMinutesFirstWarning()) + " Minuten ab");
       } else if (lc.isMinutesReached(checkInterval)) {
-         return new CheckCounterResponse(Boolean.FALSE, "Info", "Deine " + lc.getName() + " Zeit ist abgelaufen");
+         return new CheckCounterResponse(Boolean.FALSE, "Info", "Hallo " + userName + "! Deine " + lc.getName() + " Zeit ist abgelaufen");
       } else if (lc.isSecondInfo(checkInterval)) {
          return new CheckCounterResponse(
                Boolean.FALSE,

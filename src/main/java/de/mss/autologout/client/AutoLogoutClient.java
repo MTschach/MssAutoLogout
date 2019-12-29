@@ -4,7 +4,9 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -18,6 +20,7 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import de.mss.autologout.client.tts.TextToSpeech;
 import de.mss.autologout.param.CheckCounterRequest;
 import de.mss.autologout.param.CheckCounterResponse;
 import de.mss.configtools.ConfigFile;
@@ -51,6 +54,9 @@ public class AutoLogoutClient {
 
 
    private static Logger logger = null;
+   
+   
+   private TextToSpeech tts = null;
 
 
    private static Logger getLogger() {
@@ -66,6 +72,18 @@ public class AutoLogoutClient {
       init(args);
    }
 
+   
+   public void setTts(TextToSpeech t) {
+      this.tts = t;
+   }
+   
+   
+   private void speak(String msg) {
+      if (this.tts == null)
+        return;
+      
+      this.tts.speak(msg, 2.0f, false, true);
+   }
 
    private void init(String[] args) throws ParseException, MssException {
       Options cmdArgs = new Options();
@@ -145,19 +163,27 @@ public class AutoLogoutClient {
       if (response == null)
          return false;
       
-      if (Tools.isSet(response.getMessage()))
+      if (Tools.isSet(response.getMessage())) {
          showInfo(response.getHeadline(), response.getMessage());
+         speak(response.getMessage());
+      }
       
       if (response.getForceLogout() != null && response.getForceLogout().compareTo(Boolean.TRUE) == 0)
-         logout();
+         logout(10);
      
       return true;
    }
 
 
-   private void logout() {
+   private void logout(long sec) {
       getLogger().debug("logout for user " + this.lastUserName);
 
+      try {
+		Thread.sleep(sec*1000);
+	} catch (InterruptedException e) {
+		getLogger().error(e);
+	}
+      
       runCommand("logoff", null);
    }
 
@@ -266,46 +292,67 @@ public class AutoLogoutClient {
    
    public static final void main(String[] args) {
 //	   try { 
-//           // Set property as Kevin Dictionary 
-//           System.setProperty( 
-//               "freetts.voices", 
-//               "com.sun.speech.freetts.en.us"
-//                   + ".cmu_us_kal.KevinVoiceDirectory"); 
-// 
-//           // Register Engine 
-//           Central.registerEngineCentral( 
-//               "com.sun.speech.freetts"
-//               + ".jsapi.FreeTTSEngineCentral"); 
-// 
-//           // Create a Synthesizer 
-//           Synthesizer synthesizer 
-//               = Central.createSynthesizer( 
-//                   new SynthesizerModeDesc(Locale.US)); 
-// 
-//           // Allocate synthesizer 
-//           synthesizer.allocate(); 
-// 
-//           // Resume Synthesizer 
-//           synthesizer.resume(); 
-// 
-//           // Speaks the given text 
-//           // until the queue is empty. 
-//           synthesizer.speakPlainText( 
-//               "Hallo Benjamin. Deine Zeit ist abgelaufen.", null); 
-//           synthesizer.waitEngineState( 
-//               Synthesizer.QUEUE_EMPTY); 
-// 
-//           // Deallocate the Synthesizer. 
-//           synthesizer.deallocate(); 
-//       } 
-// 
-//       catch (Exception e) { 
-//           e.printStackTrace(); 
-//       } 
-//	   java.awt.Toolkit.getDefaultToolkit().beep();
-	   
-   try {
+//     // Set property as Kevin Dictionary 
+//     System.setProperty( 
+//         "freetts.voices", 
+//         "com.sun.speech.freetts.en.us"
+//             + ".cmu_us_kal.KevinVoiceDirectory"); 
+//
+//     // Register Engine 
+//     Central.registerEngineCentral( 
+//         "com.sun.speech.freetts"
+//         + ".jsapi.FreeTTSEngineCentral"); 
+//
+//     // Create a Synthesizer 
+//     Synthesizer synthesizer 
+//         = Central.createSynthesizer( 
+//             new SynthesizerModeDesc(Locale.US)); 
+//
+//     // Allocate synthesizer 
+//     synthesizer.allocate(); 
+//
+//     // Resume Synthesizer 
+//     synthesizer.resume(); 
+//
+//     // Speaks the given text 
+//     // until the queue is empty. 
+//     synthesizer.speakPlainText( 
+//         "Hallo Benjamin. Deine Zeit ist abgelaufen.", null); 
+//     synthesizer.waitEngineState( 
+//         Synthesizer.QUEUE_EMPTY); 
+//
+//     // Deallocate the Synthesizer. 
+//     synthesizer.deallocate(); 
+// } 
+//
+// catch (Exception e) { 
+//     e.printStackTrace(); 
+// } 
+// java.awt.Toolkit.getDefaultToolkit().beep();
+
+      //Create TextToSpeech
+      TextToSpeech tts = new TextToSpeech();
+   
+//	 		//Print all the available audio effects
+//			tts.getAudioEffects().stream().forEach(audioEffect -> {
+//				System.out.println("-----Name-----");
+//				System.out.println(audioEffect.getName());
+//				System.out.println("-----Examples-----");
+//				System.out.println(audioEffect.getExampleParameters());
+//				System.out.println("-----Help Text------");
+//				System.out.println(audioEffect.getHelpText() + "\n\n");
+//				
+//			});
+   
+//			//Print all the available voices
+//			tts.getAvailableVoices().stream().forEach(voice -> System.out.println("Voice: " + voice));
+			
+//			tts.setVoice("cmu-rms-hsmm");
+      tts.setVoice("bits1-hsmm");
+
+      try {
          AutoLogoutClient al = new AutoLogoutClient(args);
+         al.setTts(tts);
          al.run();
       }
       catch (Exception e) {

@@ -28,6 +28,9 @@ dependencies {
    compile group: 'net.sf.sociaal', name: 'freetts', version: '1.2.2'
    compile group: 'de.dfki.mary', name: 'marytts-runtime', version: '5.2'
    compile group: 'de.dfki.mary', name: 'marytts-lang-de', version: '5.2'
+//   compile group: 'de.dfki.mary', name: 'voice-cmu-rms-hsmm', version: '5.2'
+//   compile group: 'de.dfki.mary', name: 'voice-bits3-hsmm', version: '5.2'
+   compile group: 'de.dfki.mary', name: 'voice-bits1-hsmm', version: '5.2'
    testCompile 'junit:junit:4.12'
 }
 
