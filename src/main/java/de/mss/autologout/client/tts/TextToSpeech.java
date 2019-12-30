@@ -128,7 +128,7 @@ public class TextToSpeech {
 	 * 
 	 * @param voice
 	 */
-	public void setVoice(String voice) {
+	public void setVoice(String voice) throws IllegalArgumentException{
 		marytts.setVoice(voice);
 	}
 

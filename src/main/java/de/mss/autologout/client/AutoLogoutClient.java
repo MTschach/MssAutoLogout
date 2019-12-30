@@ -107,6 +107,34 @@ public class AutoLogoutClient {
       
       this.servers = new RestServer[] { new RestServer(this.cfgFile.getValue(CFG_KEY_SERVER, "http://localhost:21080"))};
       this.caller = new WebServiceJsonCaller<>();
+      
+      this.tts = initTts();
+   }
+
+
+   private TextToSpeech initTts() {
+      try {
+         TextToSpeech t = new TextToSpeech();
+         //Print all the available audio effects
+         t.getAudioEffects().stream().forEach(audioEffect -> {
+            getLogger().debug("-----Name-----");
+            getLogger().debug(audioEffect.getName());
+            getLogger().debug("-----Examples-----");
+            getLogger().debug(audioEffect.getExampleParameters());
+            getLogger().debug("-----Help Text------");
+            getLogger().debug(audioEffect.getHelpText() + "\n\n");
+         });
+
+         // Print all the available voices
+         t.getAvailableVoices().stream().forEach(voice -> getLogger().debug("Voice: " + voice));
+
+         t.setVoice("bits1-hsmm");
+         return t;
+      }
+      catch (Exception e) {
+         getLogger().error(e);
+      }
+      return null;
    }
    
 
@@ -291,68 +319,8 @@ public class AutoLogoutClient {
 
    
    public static final void main(String[] args) {
-//	   try { 
-//     // Set property as Kevin Dictionary 
-//     System.setProperty( 
-//         "freetts.voices", 
-//         "com.sun.speech.freetts.en.us"
-//             + ".cmu_us_kal.KevinVoiceDirectory"); 
-//
-//     // Register Engine 
-//     Central.registerEngineCentral( 
-//         "com.sun.speech.freetts"
-//         + ".jsapi.FreeTTSEngineCentral"); 
-//
-//     // Create a Synthesizer 
-//     Synthesizer synthesizer 
-//         = Central.createSynthesizer( 
-//             new SynthesizerModeDesc(Locale.US)); 
-//
-//     // Allocate synthesizer 
-//     synthesizer.allocate(); 
-//
-//     // Resume Synthesizer 
-//     synthesizer.resume(); 
-//
-//     // Speaks the given text 
-//     // until the queue is empty. 
-//     synthesizer.speakPlainText( 
-//         "Hallo Benjamin. Deine Zeit ist abgelaufen.", null); 
-//     synthesizer.waitEngineState( 
-//         Synthesizer.QUEUE_EMPTY); 
-//
-//     // Deallocate the Synthesizer. 
-//     synthesizer.deallocate(); 
-// } 
-//
-// catch (Exception e) { 
-//     e.printStackTrace(); 
-// } 
-// java.awt.Toolkit.getDefaultToolkit().beep();
-
-      //Create TextToSpeech
-      TextToSpeech tts = new TextToSpeech();
-   
-//	 		//Print all the available audio effects
-//			tts.getAudioEffects().stream().forEach(audioEffect -> {
-//				System.out.println("-----Name-----");
-//				System.out.println(audioEffect.getName());
-//				System.out.println("-----Examples-----");
-//				System.out.println(audioEffect.getExampleParameters());
-//				System.out.println("-----Help Text------");
-//				System.out.println(audioEffect.getHelpText() + "\n\n");
-//				
-//			});
-   
-//			//Print all the available voices
-//			tts.getAvailableVoices().stream().forEach(voice -> System.out.println("Voice: " + voice));
-			
-//			tts.setVoice("cmu-rms-hsmm");
-      tts.setVoice("bits1-hsmm");
-
       try {
          AutoLogoutClient al = new AutoLogoutClient(args);
-         al.setTts(tts);
          al.run();
       }
       catch (Exception e) {
