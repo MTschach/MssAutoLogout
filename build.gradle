@@ -18,37 +18,66 @@ repositories {
    }
 }
 
+sourceSets {
+   server {
+      java {
+         srcDir 'src/server/java'
+         srcDir 'src/common/java'
+      }
+   }
+   
+   client {
+      java {
+         srcDir 'src/client/java'
+         srcDir 'src/common/java'
+      }
+   }
+}
+
 dependencies {
-   compile 'org.apache.logging.log4j:log4j-core:latest.release'
-   compile 'org.apache.logging.log4j:log4j-api:latest.release'
-   compile 'Mss:MssUtils:latest.release'
-   compile 'Mss:MssConfigTools:latest.release'
-   compile 'Mss:MssNetUtils:latest.release'
-   compile group: 'commons-cli', name: 'commons-cli', version: '1.4'
-   compile group: 'net.sf.sociaal', name: 'freetts', version: '1.2.2'
-   compile group: 'de.dfki.mary', name: 'marytts-runtime', version: '5.2'
-   compile group: 'de.dfki.mary', name: 'marytts-lang-de', version: '5.2'
-//   compile group: 'de.dfki.mary', name: 'voice-cmu-rms-hsmm', version: '5.2'
-//   compile group: 'de.dfki.mary', name: 'voice-bits3-hsmm', version: '5.2'
-   compile group: 'de.dfki.mary', name: 'voice-bits1-hsmm', version: '5.2'
+   serverCompile 'org.apache.logging.log4j:log4j-core:latest.release'
+   serverCompile 'org.apache.logging.log4j:log4j-api:latest.release'
+   serverCompile 'Mss:MssUtils:latest.release'
+   serverCompile 'Mss:MssConfigTools:latest.release'
+   serverCompile 'Mss:MssNetUtils:latest.release'
+   serverCompile group: 'commons-cli', name: 'commons-cli', version: '1.4'
+   
+   clientCompile 'org.apache.logging.log4j:log4j-core:latest.release'
+   clientCompile 'org.apache.logging.log4j:log4j-api:latest.release'
+   clientCompile 'Mss:MssUtils:latest.release'
+   clientCompile 'Mss:MssConfigTools:latest.release'
+   clientCompile 'Mss:MssNetUtils:latest.release'
+   clientCompile group: 'commons-cli', name: 'commons-cli', version: '1.4'
+   clientCompile group: 'net.sf.sociaal', name: 'freetts', version: '1.2.2'
+   clientCompile group: 'de.dfki.mary', name: 'marytts-runtime', version: '5.2'
+   clientCompile group: 'de.dfki.mary', name: 'marytts-lang-de', version: '5.2'
+//   clientCompile group: 'de.dfki.mary', name: 'voice-cmu-rms-hsmm', version: '5.2'
+//   clientCompile group: 'de.dfki.mary', name: 'voice-bits3-hsmm', version: '5.2'
+   clientCompile group: 'de.dfki.mary', name: 'voice-bits1-hsmm', version: '5.2'
+   
    testCompile 'junit:junit:4.12'
 }
 
 
 jar {
    dependsOn 'clientJar'
+   dependsOn 'serverJar'
+}
+
+
+task serverJar(type: Jar) {
    baseName = project.name + 'Server'
    mainClassName = 'de.mss.autologout.server.AutoLogoutServer'
    manifest {
       attributes(
-         'Class-Path': configurations.compileClasspath.files.collect {"$it.name"}.join(' '),
+         'Class-Path': configurations.serverCompileClasspath.files.collect {"$it.name"}.join(' '),
          'Main-Class': mainClassName
       )
    }
    from {
-      configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+      configurations.serverCompileClasspath.collect { it.isDirectory() ? it : zipTree(it) }
    }
-   exclude ('de/mss/autologout/client/**')
+   from(sourceSets.server.output)
 }
 
 
@@ -57,13 +86,12 @@ task clientJar(type: Jar) {
    mainClassName = 'de.mss.autologout.client.AutoLogoutClient'
    manifest {
       attributes(
-         'Class-Path': configurations.compileClasspath.files.collect {"$it.name"}.join(' '),
+         'Class-Path': configurations.clientCompileClasspath.files.collect {"$it.name"}.join(' '),
          'Main-Class': mainClassName
       )
    }
    from {
-      configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+      configurations.clientCompileClasspath.collect { it.isDirectory() ? it : zipTree(it) }
    }
-   from(sourceSets.main.output)
-   exclude ( 'de/mss/autologout/server/**' )
+   from(sourceSets.client.output)
 }
