@@ -1,3 +1,8 @@
+plugins {
+    id 'application'
+    id 'com.github.johnrengelman.shadow' version '1.2.3'
+}
+
 apply plugin: 'java'
 apply plugin: 'application'
 
@@ -55,6 +60,19 @@ dependencies {
 //   clientCompile group: 'de.dfki.mary', name: 'voice-bits3-hsmm', version: '5.2'
    clientCompile group: 'de.dfki.mary', name: 'voice-bits1-hsmm', version: '5.2'
    
+   compile 'org.apache.logging.log4j:log4j-core:latest.release'
+   compile 'org.apache.logging.log4j:log4j-api:latest.release'
+   compile 'Mss:MssUtils:latest.release'
+   compile 'Mss:MssConfigTools:latest.release'
+   compile 'Mss:MssNetUtils:latest.release'
+   compile group: 'commons-cli', name: 'commons-cli', version: '1.4'
+//   compile group: 'net.sf.sociaal', name: 'freetts', version: '1.2.2'
+//   compile group: 'de.dfki.mary', name: 'marytts-runtime', version: '5.2'
+//   compile group: 'de.dfki.mary', name: 'marytts-lang-de', version: '5.2'
+//   clientCompile group: 'de.dfki.mary', name: 'voice-cmu-rms-hsmm', version: '5.2'
+//   clientCompile group: 'de.dfki.mary', name: 'voice-bits3-hsmm', version: '5.2'
+   compile group: 'de.dfki.mary', name: 'voice-bits1-hsmm', version: '5.2'
+   
    testCompile 'junit:junit:4.12'
 }
 
@@ -81,8 +99,8 @@ task serverJar(type: Jar) {
 }
 
 
-task clientJar(type: Jar) {
-   baseName = project.name + 'Client'
+task clientFatJar(type: Jar) {
+   baseName = project.name + 'FatClient'
    mainClassName = 'de.mss.autologout.client.AutoLogoutClient'
    manifest {
       attributes(
@@ -94,4 +112,29 @@ task clientJar(type: Jar) {
       configurations.clientCompileClasspath.collect { it.isDirectory() ? it : zipTree(it) }
    }
    from(sourceSets.client.output)
+}
+
+
+task clientJar(type: Jar) {
+   dependsOn 'copyToLib'
+   baseName = project.name + 'Client'
+   mainClassName = 'de.mss.autologout.client.AutoLogoutClient'
+   manifest {
+      attributes(
+         'Class-Path': configurations.clientCompileClasspath.files.collect {"$it.name"}.join(' '),
+         'Main-Class': mainClassName
+      )
+   }
+   from(sourceSets.client.output)
+}
+
+shadowJar {
+   classifier=''
+   mergeServiceFiles()
+}
+
+
+task copyToLib(type: Copy) {
+   into "$buildDir/output/libs"
+    from configurations.runtime
 }

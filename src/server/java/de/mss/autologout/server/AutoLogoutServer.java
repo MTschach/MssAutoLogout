@@ -162,8 +162,8 @@ public class AutoLogoutServer extends WebServiceServer {
 
       if (!this.counterMap.containsKey(userName))
          loadUser(userName);
-
-      resp.setCounterValues(this.counterMap.get(userName).getCounterValues());
+      
+      resp.setCounterValues(getCounterValues(userName));
 
       return resp;
    }
@@ -184,10 +184,25 @@ public class AutoLogoutServer extends WebServiceServer {
       for (String userName : keys) {
          loadUser(userName);
 
-         resp.getCounterValues().put(userName, this.counterMap.get(userName).getCounterValues());
+         resp.getCounterValues().put(userName, getCounterValues(userName));
       }
 
       return resp;
+   }
+   
+   
+   private Map<String, BigInteger> getCounterValues(String userName) {
+       Map<String, BigInteger> values = this.counterMap.get(userName).getCounterValues();
+       
+       values.put(DB_DATE_FORMAT.format(new java.util.Date()), BigInteger.valueOf(this.counterMap.get(userName).getDailyCounter().getCurrentMinutes()));
+       
+       BigInteger sum = BigInteger.ZERO;
+       for (Entry<String, BigInteger> entry : values.entrySet())
+          sum = sum.add(entry.getValue());
+       
+       values.put("total", sum);
+   
+       return values;
    }
 
 
@@ -275,7 +290,7 @@ public class AutoLogoutServer extends WebServiceServer {
 
       int minutesDaily = this.dbFile.getValue(DB_BASE_KEY + userName + ".D" + DB_DATE_FORMAT.format(checkDate), BigInteger.ZERO).intValue();
       int minutesWeekly = minutesDaily;
-      for (int i = 1; i <= 7; i++ ) {
+      for (int i = 1; i < 7; i++ ) {
          try {
             checkDate = DateTimeTools.addDate(checkDate, -1, Calendar.DAY_OF_MONTH);
          }

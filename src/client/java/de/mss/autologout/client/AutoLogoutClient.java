@@ -116,23 +116,26 @@ public class AutoLogoutClient {
       try {
          TextToSpeech t = new TextToSpeech();
          //Print all the available audio effects
-         t.getAudioEffects().stream().forEach(audioEffect -> {
-            getLogger().debug("-----Name-----");
-            getLogger().debug(audioEffect.getName());
-            getLogger().debug("-----Examples-----");
-            getLogger().debug(audioEffect.getExampleParameters());
-            getLogger().debug("-----Help Text------");
-            getLogger().debug(audioEffect.getHelpText() + "\n\n");
-         });
-
+//         t.getAudioEffects().stream().forEach(audioEffect -> {
+//            getLogger().debug("-----Name-----");
+//            getLogger().debug(audioEffect.getName());
+//            getLogger().debug("-----Examples-----");
+//            getLogger().debug(audioEffect.getExampleParameters());
+//            getLogger().debug("-----Help Text------");
+//            getLogger().debug(audioEffect.getHelpText() + "\n\n");
+//         });
+         
+         getLogger().debug("Listing voices");
+         
          // Print all the available voices
          t.getAvailableVoices().stream().forEach(voice -> getLogger().debug("Voice: " + voice));
 
          t.setVoice("bits1-hsmm");
+         
          return t;
       }
       catch (Exception e) {
-         getLogger().error(e);
+         getLogger().error("error creating TTS-Interface", e);
       }
       return null;
    }
