@@ -8,6 +8,7 @@ public class CheckCounterResponse extends WebServiceResponse {
    private Boolean forceLogout = Boolean.FALSE;
    private String  headline    = null;
    private String  message     = null;
+   private String            spokenMessage    = null;
 
    public CheckCounterResponse() {}
 
@@ -15,6 +16,7 @@ public class CheckCounterResponse extends WebServiceResponse {
       setForceLogout(forceLogout);
       setHeadline(headline);
       setMessage(message);
+      setSpokenMessage(message);
    }
 
 
@@ -33,6 +35,11 @@ public class CheckCounterResponse extends WebServiceResponse {
    }
 
 
+   public void setSpokenMessage(String v) {
+      this.spokenMessage = v;
+   }
+
+
    public Boolean getForceLogout() {
       return this.forceLogout;
    }
@@ -45,5 +52,10 @@ public class CheckCounterResponse extends WebServiceResponse {
 
    public String getMessage() {
       return this.message;
+   }
+
+
+   public String getSpokenMessage() {
+      return this.spokenMessage;
    }
 }

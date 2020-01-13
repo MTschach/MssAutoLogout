@@ -57,6 +57,11 @@ public class LogoutCounter {
    }
 
 
+   public int getMinutesOvertime() {
+      return getCurrentMinutes() - getMaxMinutes();
+   }
+
+
    public String getDate() {
       return this.date;
    }
