@@ -10,6 +10,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Request;
 
+import de.mss.autologout.param.AddCounterRequest;
 import de.mss.autologout.param.ForceLogoutRequest;
 import de.mss.autologout.param.ResetCounterRequest;
 import de.mss.autologout.server.AutoLogoutWebService;
@@ -17,7 +18,7 @@ import de.mss.net.webservice.WebServiceJsonDataBuilder;
 import de.mss.utils.Tools;
 import de.mss.utils.exception.MssException;
 
-public class ResetCounter extends SecretAutoLogoutWebService {
+public class AddCounter extends SecretAutoLogoutWebService {
 
    private static final long serialVersionUID = 6568891347882291391L;
 
@@ -43,10 +44,10 @@ public class ResetCounter extends SecretAutoLogoutWebService {
          HttpServletResponse httpResponse)
          throws MssException {
 
-      WebServiceJsonDataBuilder<ResetCounterRequest> in = new WebServiceJsonDataBuilder<>();
+      WebServiceJsonDataBuilder<AddCounterRequest> in = new WebServiceJsonDataBuilder<>();
 
       try {
-         ResetCounterRequest req = in.parseData(params, new ResetCounterRequest());
+         AddCounterRequest req = in.parseData(params, new AddCounterRequest());
 
          if (!Tools.isSet(req.getUserName()))
             throw new MssException(de.mss.utils.exception.ErrorCodes.ERROR_INVALID_PARAM, "no username given");
@@ -54,9 +55,12 @@ public class ResetCounter extends SecretAutoLogoutWebService {
          if (!Tools.isSet(req.getUser()))
             throw new MssException(de.mss.utils.exception.ErrorCodes.ERROR_INVALID_PARAM, "no user given");
 
+         if (req.getValue() == null)
+             throw new MssException(de.mss.utils.exception.ErrorCodes.ERROR_INVALID_PARAM, "no value given");
+
          checkSecret(req.getSecret());
 
-         this.server.resetCounter(req.getUserName(), req.getUser());
+         this.server.setForceLogout(req.getUserName(), req.getUser());
 
          httpResponse.getWriter().flush();
          httpResponse.getWriter().close();

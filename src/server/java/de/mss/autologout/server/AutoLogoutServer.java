@@ -238,6 +238,20 @@ public class AutoLogoutServer extends WebServiceServer {
    }
 
 
+   public void addCounter(String userName, String user, Integer minutes) {
+      if (!this.counterMap.containsKey(userName))
+         loadUser(userName);
+      AutoLogoutCounter counter = this.counterMap.get(userName);
+
+      this.dbFile
+            .insertKeyValue(
+                  DB_BASE_KEY + userName + ".D" + DB_DATETIME_FORMAT.format(new java.util.Date()) + user,
+                  "" + counter.getDailyCounter().getCurrentMinutes());
+      addToCounter(userName, minutes * 60);
+      
+   }
+
+
    private CheckCounterResponse checkCounter(LogoutCounter lc, String userName, int checkInterval) {
       if (lc == null)
          return null;

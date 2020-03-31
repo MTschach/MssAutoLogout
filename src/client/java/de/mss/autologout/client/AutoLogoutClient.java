@@ -1,6 +1,7 @@
 package de.mss.autologout.client;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.math.BigInteger;
@@ -162,6 +163,10 @@ public class AutoLogoutClient {
       getLogger().error("my Error Message");
       getLogger().trace("my Trace Message");
       
+      File f = new File(System.getProperty("user.home") + File.separator + ".disableAutologout");
+      if (f.exists())
+         f.delete();
+      
       AutoLogoutListener all = new AutoLogoutListener(this);
       Thread t = new Thread(all);
       t.start();
@@ -182,6 +187,10 @@ public class AutoLogoutClient {
 
    private boolean checkCounter() throws MssException {
       if (this.lastUserName == null)
+         return true;
+      
+      File f = new File(System.getProperty("user.home") + File.separator + ".disableAutologout");
+      if (f.exists())
          return true;
       
       CheckCounterRequest request = new CheckCounterRequest();
