@@ -1,12 +1,11 @@
 package de.mss.autologout.server;
 
-import java.de.mss.autologout.param.AutoLogoutCounter;
-import java.de.mss.autologout.param.CheckCounterResponse;
-import java.de.mss.autologout.param.GetAllCountersResponse;
-import java.de.mss.autologout.param.GetCounterResponse;
+import de.mss.autologout.param.AutoLogoutCounter;
+import de.mss.autologout.param.CheckCounterResponse;
+import de.mss.autologout.param.GetAllCountersResponse;
+import de.mss.autologout.param.GetCounterResponse;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -14,18 +13,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.logging.LogManager;
-import java.util.logging.Logger;
-
-import javax.jws.WebService;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import de.mss.configtools.ConfigFile;
 import de.mss.configtools.XmlConfigFile;
+import de.mss.net.webservice.WebService;
 import de.mss.net.webservice.WebServiceServer;
 import de.mss.utils.DateTimeTools;
 import de.mss.utils.exception.MssException;

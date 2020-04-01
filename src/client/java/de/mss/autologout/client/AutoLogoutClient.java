@@ -1,25 +1,26 @@
 package de.mss.autologout.client;
 
-import java.de.mss.autologout.client.tts.TextToSpeech;
-import java.de.mss.autologout.param.CheckCounterRequest;
-import java.de.mss.autologout.param.CheckCounterResponse;
+import de.mss.autologout.client.tts.TextToSpeech;
+import de.mss.autologout.param.CheckCounterRequest;
+import de.mss.autologout.param.CheckCounterResponse;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.math.BigInteger;
-import java.text.ParseException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.logging.Level;
-import java.util.logging.LogManager;
-import java.util.logging.Logger;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import de.mss.configtools.ConfigFile;
 import de.mss.configtools.XmlConfigFile;
