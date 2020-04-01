@@ -14,12 +14,8 @@ public class ForceLogoutRequest extends WebServiceRequest {
    private String userName = null;
 
 
-   @BodyParam(value = "user")
-   private String user = null;
-
-
-   @BodyParam(value = "secret")
-   private String secret = null;
+   @BodyParam(value = "body")
+   private CounterRequestBody body = null;
 
 
    public ForceLogoutRequest() {}
@@ -30,13 +26,8 @@ public class ForceLogoutRequest extends WebServiceRequest {
    }
 
 
-   public void setUser(String u) {
-      this.user = u;
-   }
-
-
-   public void setSecret(String s) {
-      this.secret = s;
+   public void setBody(CounterRequestBody v) {
+      this.body = v;
    }
 
 
@@ -45,12 +36,7 @@ public class ForceLogoutRequest extends WebServiceRequest {
    }
 
 
-   public String getUser() {
-      return this.user;
-   }
-
-
-   public String getSecret() {
-      return this.secret;
+   public CounterRequestBody getBody() {
+      return this.body;
    }
 }

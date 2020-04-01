@@ -14,16 +14,8 @@ public class AddCounterRequest extends WebServiceRequest {
    private String userName = null;
 
 
-   @BodyParam(value = "user")
-   private String user = null;
-
-
-   @BodyParam(value = "secret")
-   private String secret = null;
-
-
-   @BodyParam(value = "value")
-   private Integer value = null;
+   @BodyParam(value = "body")
+   private AddCounterRequestBody body = null;
 
 
    public AddCounterRequest() {}
@@ -34,18 +26,8 @@ public class AddCounterRequest extends WebServiceRequest {
    }
 
 
-   public void setUser(String u) {
-      this.user = u;
-   }
-
-
-   public void setSecret(String s) {
-      this.secret = s;
-   }
-   
-   
-   public void setValue(Integer v) {
-	   this.value = v;
+   public void setBody(AddCounterRequestBody v) {
+      this.body = v;
    }
 
 
@@ -54,17 +36,7 @@ public class AddCounterRequest extends WebServiceRequest {
    }
 
 
-   public String getUser() {
-      return this.user;
-   }
-
-
-   public String getSecret() {
-      return this.secret;
-   }
-   
-   
-   public Integer getValue() {
-	   return this.value;
+   public AddCounterRequestBody getBody() {
+      return this.body;
    }
 }

@@ -5,9 +5,9 @@ plugins {
 
 apply plugin: 'java'
 apply plugin: 'application'
+apply plugin: 'eclipse'
 
 repositories {
-   mavenLocal()
    jcenter()
    maven {
       url "https://dl.bintray.com/mtschach/Mss"
@@ -21,6 +21,7 @@ repositories {
    maven {
       url "https://mvnrepository.com/artifact/de.dfki.mary/marytts-lang-de"
    }
+   mavenLocal()
 }
 
 sourceSets {

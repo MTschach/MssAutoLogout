@@ -2,7 +2,6 @@ package de.mss.autologout.server.rest;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.text.SimpleDateFormat;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
@@ -10,9 +9,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Request;
 
-import de.mss.autologout.param.ForceLogoutRequest;
 import de.mss.autologout.param.ResetCounterRequest;
-import de.mss.autologout.server.AutoLogoutWebService;
 import de.mss.net.webservice.WebServiceJsonDataBuilder;
 import de.mss.utils.Tools;
 import de.mss.utils.exception.MssException;
@@ -51,12 +48,15 @@ public class ResetCounter extends SecretAutoLogoutWebService {
          if (!Tools.isSet(req.getUserName()))
             throw new MssException(de.mss.utils.exception.ErrorCodes.ERROR_INVALID_PARAM, "no username given");
 
-         if (!Tools.isSet(req.getUser()))
+         if (req.getBody() == null)
+        	 throw new MssException(de.mss.utils.exception.ErrorCodes.ERROR_INVALID_PARAM, "no body given");
+
+         if (!Tools.isSet(req.getBody().getUser()))
             throw new MssException(de.mss.utils.exception.ErrorCodes.ERROR_INVALID_PARAM, "no user given");
 
-         checkSecret(req.getSecret());
+         checkSecret(req.getBody().getSecret());
 
-         this.server.resetCounter(req.getUserName(), req.getUser());
+         this.server.resetCounter(req.getUserName(), req.getBody().getUser());
 
          httpResponse.getWriter().flush();
          httpResponse.getWriter().close();
