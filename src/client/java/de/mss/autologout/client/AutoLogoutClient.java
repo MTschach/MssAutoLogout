@@ -1,29 +1,26 @@
 package de.mss.autologout.client;
 
+import java.de.mss.autologout.client.tts.TextToSpeech;
+import java.de.mss.autologout.param.CheckCounterRequest;
+import java.de.mss.autologout.param.CheckCounterResponse;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.math.BigInteger;
-import java.util.Arrays;
+import java.text.ParseException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.logging.Level;
+import java.util.logging.LogManager;
+import java.util.logging.Logger;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
-import de.mss.autologout.client.tts.TextToSpeech;
-import de.mss.autologout.param.CheckCounterRequest;
-import de.mss.autologout.param.CheckCounterResponse;
 import de.mss.configtools.ConfigFile;
 import de.mss.configtools.XmlConfigFile;
 import de.mss.net.rest.RestMethod;
@@ -80,7 +77,7 @@ public class AutoLogoutClient {
    
    
    private void speak(String msg) {
-      if (this.tts == null)
+      if (this.tts == null || !de.mss.utils.Tools.isSet(msg))
         return;
       
       this.tts.speak(msg, 2.0f, false, true);
@@ -205,7 +202,7 @@ public class AutoLogoutClient {
       
       if (Tools.isSet(response.getMessage())) {
          showInfo(response.getHeadline(), response.getMessage());
-         speak(response.getMessage());
+         speak(response.getSpokenMessage());
       }
       
       if (response.getForceLogout() != null && response.getForceLogout().compareTo(Boolean.TRUE) == 0)
