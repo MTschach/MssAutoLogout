@@ -1,34 +1,55 @@
-plugins {
-    id 'application'
-    id 'com.github.johnrengelman.shadow' version '1.2.3'
-}
-
 apply plugin: 'java'
 apply plugin: 'application'
 apply plugin: 'eclipse'
 
-repositories {
-   jcenter()
-   maven {
-      url "https://dl.bintray.com/mtschach/Mss"
-   }
-   maven {
-      url "https://oss.sonatype.org/content/repositories/snapshots"
-   }
-   maven {
-      url "https://mvnrepository.com/artifact/de.dfki.mary/marytts-runtime"
-   }
-   maven {
-      url "https://mvnrepository.com/artifact/de.dfki.mary/marytts-lang-de"
-   }
-   mavenLocal()
+buildscript {
+    repositories {
+        jcenter()
+        google()
+    }
+   dependencies {
+      classpath 'com.android.tools.build:gradle:3.2.1'
+      classpath 'com.github.dcendents:android-maven-gradle-plugin:1.4.1'
+      classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.+'
+    }
 }
+
+allprojects {
+   repositories {
+      mavenLocal()
+      jcenter()
+      maven {
+         url "https://dl.bintray.com/mtschach/Mss"
+      }
+      maven {
+         url "https://oss.sonatype.org/content/repositories/snapshots"
+      }
+      maven {
+         url "https://mvnrepository.com/artifact/de.dfki.mary/marytts-runtime"
+      }
+      maven {
+         url "https://mvnrepository.com/artifact/de.dfki.mary/marytts-lang-de"
+	  }
+   }
+}
+
+
+configurations {
+   genClasses
+   clientCompile
+   serverCompile
+   serverCompile.extendsFrom clientCompile
+   testCompile.extendsFrom serverCompile
+   compile.extendsFrom serverCompile
+}
+
 
 sourceSets {
    server {
       java {
          srcDir 'src/server/java'
          srcDir 'src/common/java'
+         srcDir 'gen'
       }
    }
    
@@ -36,6 +57,15 @@ sourceSets {
       java {
          srcDir 'src/client/java'
          srcDir 'src/common/java'
+         srcDir 'gen'
+      }
+   }
+
+   test {
+      java {
+         compileClasspath += client.output + server.output
+         runtimeClasspath += client.output + server.output
+         srcDir 'src/test/java'
       }
    }
 }
@@ -57,8 +87,6 @@ dependencies {
    clientCompile group: 'net.sf.sociaal', name: 'freetts', version: '1.2.2'
    clientCompile group: 'de.dfki.mary', name: 'marytts-runtime', version: '5.2'
    clientCompile group: 'de.dfki.mary', name: 'marytts-lang-de', version: '5.2'
-//   clientCompile group: 'de.dfki.mary', name: 'voice-cmu-rms-hsmm', version: '5.2'
-//   clientCompile group: 'de.dfki.mary', name: 'voice-bits3-hsmm', version: '5.2'
    clientCompile group: 'de.dfki.mary', name: 'voice-bits1-hsmm', version: '5.2'
    
    compile 'org.apache.logging.log4j:log4j-core:latest.release'
@@ -67,11 +95,6 @@ dependencies {
    compile 'Mss:MssConfigTools:latest.release'
    compile 'Mss:MssNetUtils:latest.release'
    compile group: 'commons-cli', name: 'commons-cli', version: '1.4'
-//   compile group: 'net.sf.sociaal', name: 'freetts', version: '1.2.2'
-//   compile group: 'de.dfki.mary', name: 'marytts-runtime', version: '5.2'
-//   compile group: 'de.dfki.mary', name: 'marytts-lang-de', version: '5.2'
-//   clientCompile group: 'de.dfki.mary', name: 'voice-cmu-rms-hsmm', version: '5.2'
-//   clientCompile group: 'de.dfki.mary', name: 'voice-bits3-hsmm', version: '5.2'
    compile group: 'de.dfki.mary', name: 'voice-bits1-hsmm', version: '5.2'
    
    testCompile 'junit:junit:4.12'
@@ -81,6 +104,21 @@ dependencies {
 jar {
    dependsOn 'clientJar'
    dependsOn 'serverJar'
+}
+
+task genClasses {
+   dependsOn ('genParams');
+   dependsOn ('genDbParams');
+}
+
+task genParams(type:JavaExec) {
+   group 'gen'
+   workingDir = "${rootDir}"
+   main      = "de.mss.xml2class.Xml2Class"
+   classpath {[
+      configurations.genClasses
+   ]}
+   args '-t', 'templates', '-i', 'params/client', '-o', 'gen'
 }
 
 
@@ -129,13 +167,11 @@ task clientJar(type: Jar) {
    from(sourceSets.client.output)
 }
 
-shadowJar {
-   classifier=''
-   mergeServiceFiles()
+
+task publishLocal {
+   dependsOn 'publishToMavenLocal'
 }
 
 
-task copyToLib(type: Copy) {
-   into "$buildDir/output/libs"
-    from configurations.runtime
-}
+// Define the main class for the application
+

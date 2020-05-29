@@ -135,6 +135,9 @@ public class AutoLogoutServer extends WebServiceServer {
 
    public CheckCounterResponse checkCounter(String userName, int checkInterval) {
       CheckCounterResponse ret = null;
+      
+      if (checkLocked(userName))
+    	  return new CheckCounterResponse(Boolean.TRUE, "Login gesperrt", "Hallo " + userName +". Du darfst dich heute nicht einloggen.");
 
       if (!this.counterMap.containsKey(userName))
          loadUser(userName);
@@ -154,6 +157,12 @@ public class AutoLogoutServer extends WebServiceServer {
          return ret;
 
       return new CheckCounterResponse(Boolean.FALSE, "", "");
+   }
+
+
+   private boolean checkLocked(String userName) {
+      String date = new SimpleDateFormat("yyyyMMdd").format(new java.util.Date());
+      return de.mss.utils.Tools.isSet(getConfigFile().getValue(CFG_KEY_BASE + "." + userName + ".lock." + date, ""));
    }
 
 
@@ -235,6 +244,21 @@ public class AutoLogoutServer extends WebServiceServer {
                   "" + counter.getDailyCounter().getCurrentMinutes());
       counter.getDailyCounter().reset();
       addToCounter(userName, minutes * 60);
+   }
+   
+   
+   public void setCounter(String userName, String user, Integer minutes) {
+      if (!this.counterMap.containsKey(userName))
+         loadUser(userName);
+      AutoLogoutCounter counter = this.counterMap.get(userName);
+      
+      this.dbFile
+      .insertKeyValue(
+            DB_BASE_KEY + userName + ".D" + DB_DATETIME_FORMAT.format(new java.util.Date()) + user,
+            "" + counter.getDailyCounter().getCurrentMinutes());
+      
+      dailyCounter = counter.getDailyCounter();
+      hier gehts weiter
    }
 
 
