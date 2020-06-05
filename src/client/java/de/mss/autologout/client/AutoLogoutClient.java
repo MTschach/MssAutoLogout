@@ -1,8 +1,5 @@
 package de.mss.autologout.client;
 
-import de.mss.autologout.client.tts.TextToSpeech;
-import de.mss.autologout.param.CheckCounterRequest;
-import de.mss.autologout.param.CheckCounterResponse;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -22,6 +19,9 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import de.mss.autologout.client.param.CheckCounterRequest;
+import de.mss.autologout.client.param.CheckCounterResponse;
+import de.mss.autologout.client.tts.TextToSpeech;
 import de.mss.configtools.ConfigFile;
 import de.mss.configtools.XmlConfigFile;
 import de.mss.net.rest.RestMethod;
@@ -202,7 +202,7 @@ public class AutoLogoutClient {
          return false;
       
       if (Tools.isSet(response.getMessage())) {
-         showInfo(response.getHeadline(), response.getMessage());
+         showInfo(response.getHeadLine(), response.getMessage());
          speak(response.getSpokenMessage());
       }
       

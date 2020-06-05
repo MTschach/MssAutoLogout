@@ -9,8 +9,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Request;
 
-import de.mss.autologout.param.CheckCounterRequest;
-import de.mss.autologout.param.CheckCounterResponse;
+import de.mss.autologout.client.param.CheckCounterRequest;
+import de.mss.autologout.client.param.CheckCounterResponse;
 import de.mss.autologout.server.AutoLogoutWebService;
 import de.mss.net.webservice.WebServiceJsonDataBuilder;
 import de.mss.utils.Tools;

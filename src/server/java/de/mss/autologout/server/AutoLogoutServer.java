@@ -1,14 +1,8 @@
 package de.mss.autologout.server;
 
-import de.mss.autologout.param.AutoLogoutCounter;
-import de.mss.autologout.param.CheckCounterResponse;
-import de.mss.autologout.param.GetAllCountersResponse;
-import de.mss.autologout.param.GetCounterResponse;
-import java.io.IOException;
 import java.math.BigInteger;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,25 +17,26 @@ import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import de.mss.autologout.client.param.CheckCounterResponse;
+import de.mss.autologout.client.param.CounterValues;
+import de.mss.autologout.client.param.GetAllCounterResponse;
+import de.mss.autologout.client.param.GetCounterResponse;
+import de.mss.autologout.client.param.SetCounterBody;
+import de.mss.autologout.param.AutoLogoutCounter;
+import de.mss.autologout.server.storageengine.StorageEngineFactory;
 import de.mss.configtools.ConfigFile;
 import de.mss.configtools.XmlConfigFile;
 import de.mss.net.webservice.WebService;
 import de.mss.net.webservice.WebServiceServer;
-import de.mss.utils.DateTimeTools;
 import de.mss.utils.exception.MssException;
 
 public class AutoLogoutServer extends WebServiceServer {
 
-   private static final String            DB_BASE_KEY            = "autologout.";
    private static final String CMD_OPTION_CONFIG_FILE = "config";
    public static final String  CFG_KEY_BASE           = "de.mss.autologout";
-   private static final String CFG_KEY_DB_FILE        = CFG_KEY_BASE + ".dbfile";
 
-   private static final String DB_KEY_DAILY_MINUTES   = ".minutes.daily";
-   private static final String DB_KEY_WEEKLY_MINUTES  = ".minutes.weekly";
 
-   private static final SimpleDateFormat  DB_DATE_FORMAT         = new SimpleDateFormat("yyyyMMdd");
-   private static final SimpleDateFormat  DB_DATETIME_FORMAT     = new SimpleDateFormat("yyyyMMddHHmmssSSS");
+   private static final SimpleDateFormat  DB_DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
 
    private Map<String, AutoLogoutCounter> counterMap             = new HashMap<>();
 
@@ -57,16 +52,8 @@ public class AutoLogoutServer extends WebServiceServer {
    }
 
 
-   private ConfigFile dbFile = null;
-
-
    public AutoLogoutServer(ConfigFile c) {
       super(c);
-   }
-
-
-   public ConfigFile getDbFile() {
-      return this.dbFile;
    }
 
 
@@ -78,7 +65,7 @@ public class AutoLogoutServer extends WebServiceServer {
 
    @Override
    protected void initApplication() {
-      this.dbFile = new XmlConfigFile(getConfigFile().getValue(CFG_KEY_DB_FILE, "autologout.db"));
+      // nothing to do here
    }
 
 
@@ -121,13 +108,11 @@ public class AutoLogoutServer extends WebServiceServer {
 
       if (dailyCounter != null && dailyCounter.getMaxMinutes() > 0) {
          dailyCounter.addSeconds(checkInterval);
-         this.dbFile
-               .insertKeyValue(DB_BASE_KEY + userName + ".D" + DB_DATE_FORMAT.format(new java.util.Date()), "" + dailyCounter.getCurrentMinutes());
          try {
-            this.dbFile.writeConfig(getConfigFile().getValue(CFG_KEY_DB_FILE, "autologout.db"));
+            StorageEngineFactory.getStorageEngine(getConfigFile()).storeUser(userName, this.counterMap.get(userName));
          }
-         catch (IOException e) {
-            getLogger().error("Error while updating db", e);
+         catch (MssException e) {
+            getLogger().error(e);
          }
       }
    }
@@ -136,8 +121,9 @@ public class AutoLogoutServer extends WebServiceServer {
    public CheckCounterResponse checkCounter(String userName, int checkInterval) {
       CheckCounterResponse ret = null;
       
-      if (checkLocked(userName))
-    	  return new CheckCounterResponse(Boolean.TRUE, "Login gesperrt", "Hallo " + userName +". Du darfst dich heute nicht einloggen.");
+      if (checkLocked(userName)) {
+         return getResponse(Boolean.TRUE, "Login gesperrt", "Hallo " + userName + ". Du darfst dich heute nicht einloggen.", null);
+      }
 
       if (!this.counterMap.containsKey(userName))
          loadUser(userName);
@@ -156,7 +142,7 @@ public class AutoLogoutServer extends WebServiceServer {
       if (ret != null)
          return ret;
 
-      return new CheckCounterResponse(Boolean.FALSE, "", "");
+      return getResponse(Boolean.FALSE, "", "", null);
    }
 
 
@@ -178,8 +164,8 @@ public class AutoLogoutServer extends WebServiceServer {
    }
 
 
-   public GetAllCountersResponse getAllCounters() {
-      GetAllCountersResponse resp = new GetAllCountersResponse();
+   public GetAllCounterResponse getAllCounters() {
+      GetAllCounterResponse resp = new GetAllCounterResponse();
 
       List<String> keys = new ArrayList<>();
 
@@ -200,116 +186,83 @@ public class AutoLogoutServer extends WebServiceServer {
    }
    
    
-   private Map<String, BigInteger> getCounterValues(String userName) {
-       Map<String, BigInteger> values = this.counterMap.get(userName).getCounterValues();
+   private CounterValues getCounterValues(String userName) {
+      CounterValues ret = new CounterValues();
+      ret.setValues(this.counterMap.get(userName).getCounterValues());
        
-       values.put(DB_DATE_FORMAT.format(new java.util.Date()), BigInteger.valueOf(this.counterMap.get(userName).getDailyCounter().getCurrentMinutes()));
+      ret
+            .getValues()
+            .put(
+                  DB_DATE_FORMAT.format(new java.util.Date()),
+                  BigInteger.valueOf(this.counterMap.get(userName).getDailyCounter().getCurrentMinutes()));
        
        BigInteger sum = BigInteger.ZERO;
-       for (Entry<String, BigInteger> entry : values.entrySet())
+      for (Entry<String, BigInteger> entry : ret.getValues().entrySet())
           sum = sum.add(entry.getValue());
        
-       values.put("total", sum);
+      ret.getValues().put("total", sum);
    
-       return values;
+      return ret;
    }
 
 
-   public void setForceLogout(String userName, String user) {
-      if (!this.counterMap.containsKey(userName))
-         loadUser(userName);
-
-      AutoLogoutCounter counter = this.counterMap.get(userName);
-      int minutes = counter.getDailyCounter().getMaxMinutes() + counter.getDailyCounter().getMinutesForceLogoff();
-
-      this.dbFile
-            .insertKeyValue(
-                  DB_BASE_KEY + userName + ".D" + DB_DATETIME_FORMAT.format(new java.util.Date()) + user,
-                  "" + counter.getDailyCounter().getCurrentMinutes());
-      counter.getDailyCounter().reset();
-      addToCounter(userName, minutes * 60);
-   }
-
-
-   public void resetCounter(String userName, String user) {
-      if (!this.counterMap.containsKey(userName))
-         loadUser(userName);
-
-      AutoLogoutCounter counter = this.counterMap.get(userName);
-      int minutes = 0;
-
-      this.dbFile
-            .insertKeyValue(
-                  DB_BASE_KEY + userName + ".D" + DB_DATETIME_FORMAT.format(new java.util.Date()) + user,
-                  "" + counter.getDailyCounter().getCurrentMinutes());
-      counter.getDailyCounter().reset();
-      addToCounter(userName, minutes * 60);
-   }
-   
-   
-   public void setCounter(String userName, String user, Integer minutes) {
-      if (!this.counterMap.containsKey(userName))
-         loadUser(userName);
-      AutoLogoutCounter counter = this.counterMap.get(userName);
-      
-      this.dbFile
-      .insertKeyValue(
-            DB_BASE_KEY + userName + ".D" + DB_DATETIME_FORMAT.format(new java.util.Date()) + user,
-            "" + counter.getDailyCounter().getCurrentMinutes());
-      
-      dailyCounter = counter.getDailyCounter();
-      hier gehts weiter
-   }
-
-
-   public void addCounter(String userName, String user, Integer minutes) {
-      if (!this.counterMap.containsKey(userName))
-         loadUser(userName);
-      AutoLogoutCounter counter = this.counterMap.get(userName);
-
-      this.dbFile
-            .insertKeyValue(
-                  DB_BASE_KEY + userName + ".D" + DB_DATETIME_FORMAT.format(new java.util.Date()) + user,
-                  "" + counter.getDailyCounter().getCurrentMinutes());
-      addToCounter(userName, minutes * 60);
-      
-   }
-
-
-   private CheckCounterResponse checkCounter(LogoutCounter lc, String userName, int checkInterval) {
+   private static CheckCounterResponse checkCounter(LogoutCounter lc, String userName, int checkInterval) {
       if (lc == null)
          return null;
 
       if (lc.isForceLogoff()) {
-         return new CheckCounterResponse(Boolean.TRUE, "Info", "Hallo " + userName + "! Deine " + lc.getName() + " Zeit ist abgelaufen, Du wirst automatisch abgemeldet");
+         return getResponse(
+               Boolean.TRUE,
+               "Info",
+               "Hallo " + userName + "! Deine " + lc.getName() + " Zeit ist abgelaufen, Du wirst automatisch abgemeldet",
+               null);
       } else if (lc.isMinutesUntilForceLogoff()) {
-         CheckCounterResponse resp = new CheckCounterResponse(
+         return getResponse(
                Boolean.FALSE,
                "Info",
                "Hallo " + userName + "! Deine " + lc.getName() + " Zeit ist seit " + lc.getMinutesOvertime() + " Minuten abgelaufen. Du wirst in "
-                     + lc.getMinutesUntilFoceLogoff() + "Minuten abgemeldet.");
-         resp.setSpokenMessage("Hallo " + userName + "! Deine Zeit ist abgelaufen!");
-         return resp;
+                     + lc.getMinutesUntilFoceLogoff()
+                     + "Minuten abgemeldet.",
+               getMessageReached(userName, ""));
       } else if (lc.isFirstWarning(checkInterval)) {
-         return new CheckCounterResponse(
+         return getResponse(
                Boolean.FALSE,
                "Info",
-               "Hallo " + userName + "! Deine " + lc.getName() + " Zeit läuft in " + (lc.getMinutesForceLogoff() - lc.getMinutesFirstWarning()) + " Minuten ab");
+               "Hallo "
+                     + userName
+                     + "! Deine "
+                     + lc.getName()
+                     + " Zeit läuft in "
+                     + (lc.getMinutesForceLogoff() - lc.getMinutesFirstWarning())
+                     + " Minuten ab",
+               null);
       } else if (lc.isMinutesReached(checkInterval)) {
-         return new CheckCounterResponse(Boolean.FALSE, "Info", "Hallo " + userName + "! Deine " + lc.getName() + " Zeit ist abgelaufen");
+         return getResponse(Boolean.FALSE, "Info", getMessageReached(userName, lc.getName()), null);
       } else if (lc.isSecondInfo(checkInterval)) {
-         return new CheckCounterResponse(
+         return getResponse(
                Boolean.FALSE,
                "Info",
-               "Hallo " + userName + "! Deine " + lc.getName() + " Zeit läuft in " + lc.getMinutesSecondInfo() + " Minuten ab");
+               getMessageInfo(userName, lc.getName(), lc.getMinutesSecondInfo()),
+               null);
       } else if (lc.isFirstInfo(checkInterval)) {
-         return new CheckCounterResponse(
+         return getResponse(
                Boolean.FALSE,
                "Info",
-               "Hallo " + userName + "! Deine " + lc.getName() + " Zeit läuft in " + lc.getMinutesFirstInfo() + " Minuten ab");
+               getMessageInfo(userName, lc.getName(), lc.getMinutesFirstInfo()),
+               null);
       }
 
       return null;
+   }
+
+
+   private static String getMessageInfo(String userName, String name, int minutesLeft) {
+      return "Hallo " + userName + "! Deine " + name + " Zeit läuft in " + minutesLeft + " Minuten ab.";
+   }
+
+
+   private static String getMessageReached(String userName, String name) {
+      return "Hallo " + userName + "! Deine Zeit " + name + " ist abgelaufen.";
    }
 
 
@@ -317,43 +270,23 @@ public class AutoLogoutServer extends WebServiceServer {
       if (this.counterMap.containsKey(userName))
          return;
 
-      LogoutCounter dailyCounter = new LogoutCounter(
-            getConfigFile().getValue(CFG_KEY_BASE + "." + userName + DB_KEY_DAILY_MINUTES, BigInteger.valueOf(30)).intValue(),
-            "tägliche");
-      LogoutCounter weeklyCounter = new LogoutCounter(
-            getConfigFile().getValue(CFG_KEY_BASE + "." + userName + DB_KEY_WEEKLY_MINUTES, BigInteger.valueOf(240)).intValue(),
-            "wöchentliche");
-
-      java.util.Date checkDate = new java.util.Date();
-
-      AutoLogoutCounter alc = new AutoLogoutCounter();
-      alc.setCounterValues(new java.util.TreeMap<>());
-
-      int minutesDaily = this.dbFile.getValue(DB_BASE_KEY + userName + ".D" + DB_DATE_FORMAT.format(checkDate), BigInteger.ZERO).intValue();
-      int minutesWeekly = minutesDaily;
-      for (int i = 1; i < 7; i++ ) {
-         try {
-            checkDate = DateTimeTools.addDate(checkDate, -1, Calendar.DAY_OF_MONTH);
-         }
-         catch (MssException e) {
-            getLogger().error("Error while loading user '" + userName + "'", e);
-         }
-         minutesWeekly += this.dbFile.getValue(DB_BASE_KEY + userName + ".D" + DB_DATE_FORMAT.format(checkDate), BigInteger.ZERO).intValue();
-         alc
-               .getCounterValues()
-               .put(
-                     DB_DATE_FORMAT.format(checkDate),
-                     this.dbFile.getValue(DB_BASE_KEY + userName + ".D" + DB_DATE_FORMAT.format(checkDate), BigInteger.ZERO));
+      try {
+         this.counterMap.put(userName, StorageEngineFactory.getStorageEngine(getConfigFile()).loadUser(userName));
       }
+      catch (MssException e) {
+         getLogger().error(e);
+      }
+   }
 
-      dailyCounter.addMinutes(minutesDaily);
-      dailyCounter.setDate(DB_DATE_FORMAT.format(new java.util.Date()));
-      weeklyCounter.addMinutes(minutesWeekly);
 
-      alc.setDailycounter(dailyCounter);
-      alc.setWeeklyCounter(weeklyCounter);
+   private static CheckCounterResponse getResponse(Boolean forceLogout, String headLine, String message, String spokenMessage) {
+      CheckCounterResponse resp = new CheckCounterResponse();
+      resp.setForceLogout(forceLogout);
+      resp.setHeadLine(headLine);
+      resp.setMessage(message);
+      resp.setSpokenMessage(spokenMessage);
 
-      this.counterMap.put(userName, alc);
+      return resp;
    }
 
 
@@ -404,5 +337,41 @@ public class AutoLogoutServer extends WebServiceServer {
 
       AutoLogoutServer as = new AutoLogoutServer(getConfig(cmd), getPort(cmd, getLogger()));
       as.run(getLocalIp(cmd));
+   }
+
+
+   public void setCounter(String userName, SetCounterBody setCounterBody) {
+      loadUser(userName);
+
+      AutoLogoutCounter counters = this.counterMap.get(userName);
+
+      try {
+         StorageEngineFactory.getStorageEngine(getConfigFile()).storeUser(userName, counters, setCounterBody.getReason());
+      }
+      catch (MssException e) {
+         getLogger().error(e);
+      }
+
+      if (setCounterBody.getValue().startsWith("+")) {
+         int addValue = Integer.parseInt(setCounterBody.getValue());
+         counters.getDailyCounter().addMinutes(addValue);
+         counters.getWeeklyCounter().addMinutes(addValue);
+      } else if (setCounterBody.getValue().startsWith("-")) {
+         int addValue = Integer.parseInt(setCounterBody.getValue());
+         counters.getDailyCounter().addMinutes(addValue);
+         counters.getWeeklyCounter().addMinutes(addValue);
+      } else {
+         int value = Integer.parseInt(setCounterBody.getValue());
+         int addValue = value - counters.getDailyCounter().getCurrentMinutes();
+         counters.getDailyCounter().addMinutes(addValue);
+         counters.getWeeklyCounter().addMinutes(addValue);
+      }
+
+      try {
+         StorageEngineFactory.getStorageEngine(getConfigFile()).storeUser(userName, counters);
+      }
+      catch (MssException e) {
+         getLogger().error(e);
+      }
    }
 }

@@ -1,0 +1,38 @@
+<classes>
+<class name="CheckCounterRequest" package="de.mss.autologout.client.param" extends="de.mss.net.webservice.WebServiceRequest" version="5837825646349178565">
+   <variable name="userName"				type="String"			value="null" annotation="@javax.ws.rs.PathParam (value = &quot;username&quot;)" />
+   <variable name="checkInterval"			type="Integer"			value="null" annotation="@javax.ws.rs.QueryParam (value = &quot;checkInterval&quot;)" />
+</class>
+<class name="CheckCounterResponse" package="de.mss.autologout.client.param" extends="de.mss.net.webservice.WebServiceResponse" version="5376841448516046929">
+   <variable name="forceLogout"				type="Boolean"			value="Boolean.FALSE" />
+   <variable name="headLine"				type="String"			value="null" />
+   <variable name="message"					type="String"			value="null" />
+   <variable name="spokenMessage"			type="String"			value="null" />
+</class>
+<class name="GetCounterRequest" package="de.mss.autologout.client.param" extends="de.mss.net.webservice.WebServiceRequest" version="58356463491745654">
+   <variable name="userName"				type="String"			value="null" annotation="@javax.ws.rs.PathParam (value = &quot;username&quot;)" />
+</class>
+<class name="CounterValues" package="de.mss.autologout.client.param" implements="java.io.Serializable" version="537684144851606234">
+   <variable name="values"					type="java.util.Map&lt;String,java.math.BigInteger&gt;"	value="null" />
+</class>
+<class name="GetCounterResponse" package="de.mss.autologout.client.param" extends="de.mss.net.webservice.WebServiceResponse" version="537684144851606579">
+   <variable name="counterValues"			type="de.mss.autologout.client.param.CounterValues"	value="null" />
+</class>
+<class name="GetAllCounterRequest" package="de.mss.autologout.client.param" extends="de.mss.net.webservice.WebServiceRequest" version="5837825646349542334">
+</class>
+<class name="GetAllCounterResponse" package="de.mss.autologout.client.param" extends="de.mss.net.webservice.WebServiceResponse" version="53768414485163464">
+   <variable name="counterValues"			type="java.util.Map&lt;String,de.mss.autologout.client.param.CounterValues&gt;"	value="null" />
+</class>
+<class name="SetCounterRequest" package="de.mss.autologout.client.param" extends="de.mss.net.webservice.WebServiceRequest" version="5837825646349542334">
+   <variable name="userName"				type="String"			value="null" annotation="@javax.ws.rs.PathParam (value = &quot;username&quot;)" />
+   <variable name="body"    				type="de.mss.autologout.client.param.SetCounterBody" value="null" annotation="@de.mss.net.webservice.BodyParam (value = &quot;body&quot;)" />
+</class>
+<class name="SetCounterBody" package="de.mss.autologout.client.param" implements="java.io.Serializable" version="537684144851606234">
+   <variable name="value"					type="String"			value="null" />
+   <valiable name="initiatingUser"			type="String"			value="null" />
+   <variable name="reason"					type="String"			value="null" />
+</class>
+<class name="SetCounterResponse" package="de.mss.autologout.client.param" extends="de.mss.net.webservice.WebServiceResponse" version="53768414485163464">
+   <variable name="counterValues"			type="de.mss.autologout.client.param.CounterValues"	value="null" />
+</class>
+</classes>

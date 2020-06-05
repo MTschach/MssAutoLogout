@@ -9,12 +9,12 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Request;
 
-import de.mss.autologout.param.ResetCounterRequest;
+import de.mss.autologout.client.param.SetCounterRequest;
 import de.mss.net.webservice.WebServiceJsonDataBuilder;
 import de.mss.utils.Tools;
 import de.mss.utils.exception.MssException;
 
-public class ResetCounter extends SecretAutoLogoutWebService {
+public class SetCounter extends SecretAutoLogoutWebService {
 
    private static final long serialVersionUID = 6568891347882291391L;
 
@@ -40,23 +40,21 @@ public class ResetCounter extends SecretAutoLogoutWebService {
          HttpServletResponse httpResponse)
          throws MssException {
 
-      WebServiceJsonDataBuilder<ResetCounterRequest> in = new WebServiceJsonDataBuilder<>();
+      WebServiceJsonDataBuilder<SetCounterRequest> in = new WebServiceJsonDataBuilder<>();
 
       try {
-         ResetCounterRequest req = in.parseData(params, new ResetCounterRequest());
+         SetCounterRequest req = in.parseData(params, new SetCounterRequest());
 
          if (!Tools.isSet(req.getUserName()))
             throw new MssException(de.mss.utils.exception.ErrorCodes.ERROR_INVALID_PARAM, "no username given");
 
          if (req.getBody() == null)
-        	 throw new MssException(de.mss.utils.exception.ErrorCodes.ERROR_INVALID_PARAM, "no body given");
+            throw new MssException(de.mss.utils.exception.ErrorCodes.ERROR_INVALID_PARAM, "no body given");
 
-         if (!Tools.isSet(req.getBody().getUser()))
-            throw new MssException(de.mss.utils.exception.ErrorCodes.ERROR_INVALID_PARAM, "no user given");
+         if (req.getBody().getValue() == null)
+            throw new MssException(de.mss.utils.exception.ErrorCodes.ERROR_INVALID_PARAM, "no value given");
 
-         checkSecret(req.getBody().getSecret());
-
-         this.server.resetCounter(req.getUserName(), req.getBody().getUser());
+         this.server.setCounter(req.getUserName(), req.getBody());
 
          httpResponse.getWriter().flush();
          httpResponse.getWriter().close();

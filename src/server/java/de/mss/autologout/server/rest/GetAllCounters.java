@@ -8,7 +8,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Request;
 
-import de.mss.autologout.param.GetAllCountersResponse;
+import de.mss.autologout.client.param.GetAllCounterResponse;
 import de.mss.autologout.server.AutoLogoutWebService;
 import de.mss.net.webservice.WebServiceJsonDataBuilder;
 import de.mss.utils.exception.MssException;
@@ -40,9 +40,9 @@ public class GetAllCounters extends AutoLogoutWebService {
          throws MssException {
 
       try {
-         GetAllCountersResponse resp = this.server.getAllCounters();
+         GetAllCounterResponse resp = this.server.getAllCounters();
 
-         httpResponse.getWriter().write(new WebServiceJsonDataBuilder<GetAllCountersResponse>().writeData(resp));
+         httpResponse.getWriter().write(new WebServiceJsonDataBuilder<GetAllCounterResponse>().writeData(resp));
          httpResponse.getWriter().flush();
          httpResponse.getWriter().close();
 

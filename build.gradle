@@ -36,19 +36,28 @@ allprojects {
 
 configurations {
    genClasses
-   clientCompile
-   serverCompile
-   serverCompile.extendsFrom clientCompile
+   commonCompile
+   clientCompile.extendsFrom commonCompile
+   serverCompile.extendsFrom commonCompile
+   testCompile.extendsFrom commonCompile
    testCompile.extendsFrom serverCompile
+   testCompile.extendsFrom clientCompile
    compile.extendsFrom serverCompile
+   compile.extendsFrom clientCompile
+   compile.extendsFrom commonCompile
 }
 
 
 sourceSets {
+   common {
+      java {
+         srcDir 'gen'
+      }
+   }
+   
    server {
       java {
          srcDir 'src/server/java'
-         srcDir 'src/common/java'
          srcDir 'gen'
       }
    }
@@ -56,49 +65,40 @@ sourceSets {
    client {
       java {
          srcDir 'src/client/java'
-         srcDir 'src/common/java'
          srcDir 'gen'
       }
    }
 
    test {
       java {
-         compileClasspath += client.output + server.output
-         runtimeClasspath += client.output + server.output
+         compileClasspath += client.output + server.output + common.output
+         runtimeClasspath += client.output + server.output + common.output
          srcDir 'src/test/java'
       }
    }
 }
 
 dependencies {
-   serverCompile 'org.apache.logging.log4j:log4j-core:latest.release'
-   serverCompile 'org.apache.logging.log4j:log4j-api:latest.release'
-   serverCompile 'Mss:MssUtils:latest.release'
-   serverCompile 'Mss:MssConfigTools:latest.release'
-   serverCompile 'Mss:MssNetUtils:latest.release'
-   serverCompile group: 'commons-cli', name: 'commons-cli', version: '1.4'
+   commonCompile group: 'Mss'						, name: 'MssUtils'						, version: 'latest.release'
+   commonCompile group: 'Mss'						, name: 'MssConfigTools'				, version: 'latest.release'
+   commonCompile group: 'Mss'						, name: 'MssNetUtils'					, version: 'latest.release'
+   commonCompile group: 'org.apache.logging.log4j'	, name: 'log4j-core'					, version: 'latest.release'
+   commonCompile group: 'org.apache.logging.log4j'	, name: 'log4j-api' 					, version: 'latest.release'
+   commonCompile group: 'commons-cli'				, name: 'commons-cli'					, version: '1.4'
    
-   clientCompile 'org.apache.logging.log4j:log4j-core:latest.release'
-   clientCompile 'org.apache.logging.log4j:log4j-api:latest.release'
-   clientCompile 'Mss:MssUtils:latest.release'
-   clientCompile 'Mss:MssConfigTools:latest.release'
-   clientCompile 'Mss:MssNetUtils:latest.release'
-   clientCompile group: 'commons-cli', name: 'commons-cli', version: '1.4'
-   clientCompile group: 'net.sf.sociaal', name: 'freetts', version: '1.2.2'
-   clientCompile group: 'de.dfki.mary', name: 'marytts-runtime', version: '5.2'
-   clientCompile group: 'de.dfki.mary', name: 'marytts-lang-de', version: '5.2'
-   clientCompile group: 'de.dfki.mary', name: 'voice-bits1-hsmm', version: '5.2'
+   clientCompile group: 'net.sf.sociaal'			, name: 'freetts'						, version: '1.2.2'
+   clientCompile group: 'de.dfki.mary'				, name: 'marytts-runtime'				, version: '5.2'
+   clientCompile group: 'de.dfki.mary'				, name: 'marytts-lang-de'				, version: '5.2'
+   clientCompile group: 'de.dfki.mary'				, name: 'voice-bits1-hsmm'				, version: '5.2'
    
-   compile 'org.apache.logging.log4j:log4j-core:latest.release'
-   compile 'org.apache.logging.log4j:log4j-api:latest.release'
-   compile 'Mss:MssUtils:latest.release'
-   compile 'Mss:MssConfigTools:latest.release'
-   compile 'Mss:MssNetUtils:latest.release'
-   compile group: 'commons-cli', name: 'commons-cli', version: '1.4'
-   compile group: 'de.dfki.mary', name: 'voice-bits1-hsmm', version: '5.2'
+   testCompile 	group: 'junit'						, name: 'junit'							, version: '4.12'
    
-   testCompile 'junit:junit:4.12'
+   genClasses 	group: 'Mss'       					, name: 'MssXml2Class'           		, version: 'latest.release'
 }
+
+compileCommonJava.dependsOn('genClasses')
+compileServerJava.dependsOn('genClasses')
+compileClientJava.dependsOn('genClasses')
 
 
 jar {
@@ -106,10 +106,11 @@ jar {
    dependsOn 'serverJar'
 }
 
+
 task genClasses {
    dependsOn ('genParams');
-   dependsOn ('genDbParams');
 }
+
 
 task genParams(type:JavaExec) {
    group 'gen'
@@ -122,49 +123,34 @@ task genParams(type:JavaExec) {
 }
 
 
-task serverJar(type: Jar) {
-   baseName = project.name + 'Server'
-   mainClassName = 'de.mss.autologout.server.AutoLogoutServer'
-   manifest {
-      attributes(
-         'Class-Path': configurations.serverCompileClasspath.files.collect {"$it.name"}.join(' '),
-         'Main-Class': mainClassName
-      )
-   }
-   from {
-      configurations.serverCompileClasspath.collect { it.isDirectory() ? it : zipTree(it) }
-   }
-   from(sourceSets.server.output)
-}
-
-
-task clientFatJar(type: Jar) {
-   baseName = project.name + 'FatClient'
-   mainClassName = 'de.mss.autologout.client.AutoLogoutClient'
-   manifest {
-      attributes(
-         'Class-Path': configurations.clientCompileClasspath.files.collect {"$it.name"}.join(' '),
-         'Main-Class': mainClassName
-      )
-   }
-   from {
-      configurations.clientCompileClasspath.collect { it.isDirectory() ? it : zipTree(it) }
-   }
-   from(sourceSets.client.output)
+clean.doFirst {
+   delete "${rootDir}/gen"
 }
 
 
 task clientJar(type: Jar) {
-   dependsOn 'copyToLib'
-   baseName = project.name + 'Client'
-   mainClassName = 'de.mss.autologout.client.AutoLogoutClient'
    manifest {
-      attributes(
-         'Class-Path': configurations.clientCompileClasspath.files.collect {"$it.name"}.join(' '),
-         'Main-Class': mainClassName
-      )
+      attributes "Main-Class": "de.mss.autologout.client.AutoLogoutClient"
    }
+   baseName = project.name + 'Client'
    from(sourceSets.client.output)
+   from {
+      configurations.clientCompileClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+   }
+   with jar
+}
+
+
+task serverJar(type: Jar) {
+   manifest {
+      attributes "Main-Class": "de.mss.autologout.server.AutoLogoutServer"
+   }
+   baseName = project.name + 'Server'
+   from(sourceSets.server.output)
+   from {
+      configurations.serverCompileClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+   }
+   with jar
 }
 
 
@@ -174,4 +160,4 @@ task publishLocal {
 
 
 // Define the main class for the application
-
+mainClassName = 'de.mss.autologout.server.AutoLogoutServer'
