@@ -36,6 +36,9 @@ public class GetAllCounterResponse extends de.mss.net.webservice.WebServiceRespo
       return sb.toString();
    }
 
+
+
+
    public String writeCounterValues() {
       StringBuilder sb = new StringBuilder("size {" + this.counterValues.size() + "} ");
       for(java.util.Map.Entry<String,de.mss.autologout.client.param.CounterValues> e : this.counterValues.entrySet()) {

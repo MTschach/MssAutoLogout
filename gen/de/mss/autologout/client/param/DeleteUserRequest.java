@@ -1,12 +1,12 @@
 package de.mss.autologout.client.param;
 
-public class GetAllCounterRequest extends de.mss.net.webservice.WebServiceRequest {
-   private static final long serialVersionUID = 5837825646349542334l;
+public class DeleteUserRequest extends AuthTokenRequest {
+   private static final long serialVersionUID = 23544575454l;
 
 
 
 
-   public GetAllCounterRequest () {
+   public DeleteUserRequest () {
       super();
    }
    

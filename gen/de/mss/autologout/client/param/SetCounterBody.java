@@ -8,7 +8,7 @@ public class SetCounterBody implements java.io.Serializable {
 
    /**  */
    
-   private String value = "null";
+   private Integer value = null;
    
 
    /**  */
@@ -21,14 +21,14 @@ public class SetCounterBody implements java.io.Serializable {
    }
    
 
-   public String getValue () { return this.value; }
+   public Integer getValue () { return this.value; }
    
 
    public String getReason () { return this.reason; }
    
 
 
-   public void setValue (String v) { this.value = v; }
+   public void setValue (Integer v) { this.value = v; }
    
 
    public void setReason (String v) { this.reason = v; }
@@ -40,7 +40,7 @@ public class SetCounterBody implements java.io.Serializable {
       StringBuilder sb = new StringBuilder(getClass().getName() + "[ ");
 
       if (this.value != null)
-         sb.append("Value {" + this.value + "} ");
+         sb.append("Value {" + this.value.toString() + "} ");
 
       if (this.reason != null)
          sb.append("Reason {" + this.reason + "} ");
@@ -48,6 +48,19 @@ public class SetCounterBody implements java.io.Serializable {
       sb.append("] ");
       return sb.toString();
    }
+
+
+
+   public void checkRequiredFields() throws de.mss.utils.exception.MssException {
+
+      if (this.value == null)
+         throw new de.mss.utils.exception.MssException(de.mss.net.exception.ErrorCodes.ERROR_REQUIRED_FIELD_MISSING, "value must not be null");
+
+
+      
+
+   }
+
 
 
 

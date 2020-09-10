@@ -37,6 +37,9 @@ public class GetCounterRequest extends de.mss.net.webservice.WebServiceRequest {
    }
 
 
+
+
+
    
    
 }

@@ -37,6 +37,9 @@ public class GetCounterResponse extends de.mss.net.webservice.WebServiceResponse
    }
 
 
+
+
+
    
    
 }

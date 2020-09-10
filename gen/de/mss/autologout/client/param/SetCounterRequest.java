@@ -1,15 +1,10 @@
 package de.mss.autologout.client.param;
 
-public class SetCounterRequest extends de.mss.net.webservice.WebServiceRequest {
+public class SetCounterRequest extends AuthTokenRequest {
    private static final long serialVersionUID = 5837825646349542334l;
 
 
 
-
-   /**  */
-   @javax.ws.rs.PathParam (value = "username")
-   private String userName = "null";
-   
 
    /**  */
    @de.mss.net.webservice.BodyParam (value = "body")
@@ -21,15 +16,9 @@ public class SetCounterRequest extends de.mss.net.webservice.WebServiceRequest {
    }
    
 
-   public String getUserName () { return this.userName; }
-   
-
    public de.mss.autologout.client.param.SetCounterBody getBody () { return this.body; }
    
 
-
-   public void setUserName (String v) { this.userName = v; }
-   
 
    public void setBody (de.mss.autologout.client.param.SetCounterBody v) { this.body = v; }
    
@@ -39,9 +28,6 @@ public class SetCounterRequest extends de.mss.net.webservice.WebServiceRequest {
    public String toString() {
       StringBuilder sb = new StringBuilder(getClass().getName() + "[ ");
 
-      if (this.userName != null)
-         sb.append("UserName {" + this.userName + "} ");
-
       if (this.body != null)
          sb.append("Body {" + this.body.toString() + "} ");
 
@@ -50,6 +36,18 @@ public class SetCounterRequest extends de.mss.net.webservice.WebServiceRequest {
       return sb.toString();
    }
 
+
+
+   @Override
+   public void checkRequiredFields() throws de.mss.utils.exception.MssException {
+
+      if (this.body == null)
+         throw new de.mss.utils.exception.MssException(de.mss.net.exception.ErrorCodes.ERROR_REQUIRED_FIELD_MISSING, "body must not be null");
+this.body.checkRequiredFields();
+
+
+      super.checkRequiredFields();
+   }
 
 
 

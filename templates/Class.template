@@ -40,6 +40,17 @@ public class {CLASS_NAME}{BASE_CLASS}{INTERFACE} {
       sb.append("] ");
       return sb.toString();
    }
+
+
+{REQUIRED_START}
+{HAS_BASECLASS}   @Override
+   public void checkRequiredFields() throws de.mss.utils.exception.MssException {
+{CHECK_REQUIRED_START}
+      {CHECK}
+{CHECK_REQUIRED_END}
+{HAS_BASECLASS}      super.checkRequiredFields();
+   }
+{REQUIRED_END}
 {PRINT_METHODS_START}
 {METHOD}
 {PRINT_METHODS_END}   
