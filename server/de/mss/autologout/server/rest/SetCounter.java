@@ -1,7 +1,7 @@
 package de.mss.autologout.server.rest;
 
 import de.mss.autologout.client.param.SetCounterRequest;
-import de.mss.autologout.param.AutoLogoutCounter;
+import de.mss.autologout.counter.AutoLogoutCounter;
 import de.mss.autologout.server.AutoLogoutAuthTokenWebService;
 import de.mss.net.rest.RestMethod;
 import de.mss.net.webservice.WebService;

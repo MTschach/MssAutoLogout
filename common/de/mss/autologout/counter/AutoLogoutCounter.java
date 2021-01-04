@@ -1,9 +1,8 @@
-package de.mss.autologout.param;
+package de.mss.autologout.counter;
 
 import java.math.BigInteger;
 import java.util.Map;
 
-import de.mss.autologout.server.LogoutCounter;
 import de.mss.utils.DateTimeTools;
 
 public class AutoLogoutCounter {

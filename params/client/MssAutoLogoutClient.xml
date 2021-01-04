@@ -2,6 +2,7 @@
 <class name="CheckCounterRequest" package="de.mss.autologout.client.param" extends="de.mss.net.webservice.WebServiceRequest" version="5837825646349178565">
    <variable name="userName"              type="String"        value="null" annotation="@javax.ws.rs.PathParam (value = &quot;username&quot;)" />
    <variable name="checkInterval"         type="Integer"       value="null" annotation="@javax.ws.rs.QueryParam (value = &quot;checkInterval&quot;)" />
+   <variable name="currentCounter"        type="Integer"       value="null" annotation="@javax.ws.rs.QueryParam (value = &quot;currentCounter&quot;)" />
 </class>
 <class name="CheckCounterResponse" package="de.mss.autologout.client.param" extends="de.mss.net.webservice.WebServiceResponse" version="5376841448516046929">
    <variable name="forceLogout"           type="Boolean"       value="Boolean.FALSE" />
@@ -53,5 +54,13 @@
    <variable name="delete"                type="Boolean"             value="null" />
 </class>
 <class name="DeleteUserRequest" package="de.mss.autologout.client.param" extends="AuthTokenRequest" version="23544575454">
+</class>
+<class name="GetUserRequest" package="de.mss.autologout.client.param" extends="de.mss.net.webservice.WebServiceRequest" version="23544575678">
+   <variable name="userName"              type="String"        value="null" annotation="@javax.ws.rs.PathParam (value = &quot;username&quot;)"     required="true" />
+</class>
+<class name="GetUserResponse" package="de.mss.autologout.client.param" extends="de.mss.net.webservice.WebServiceResponse" version="2355476">
+   <variable name="dailyCounter"          type="Integer"             value="null" />
+   <variable name="weeklyCounter"         type="Integer"             value="null" />
+   <variable name="counterValues"         type="de.mss.autologout.client.param.CounterValues"      value="null" />
 </class>
 </classes>

@@ -1,6 +1,5 @@
 package de.mss.autologout.server;
 
-import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -14,7 +13,10 @@ import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import de.mss.autologout.param.AutoLogoutCounter;
+import de.mss.autologout.counter.AutoLogoutCounter;
+import de.mss.autologout.counter.LogoutCounter;
+import de.mss.autologout.db.UserDb;
+import de.mss.autologout.db.WorkDb;
 import de.mss.configtools.ConfigFile;
 import de.mss.configtools.XmlConfigFile;
 import de.mss.net.webservice.WebService;
@@ -30,10 +32,6 @@ public class AutoLogoutServer extends WebServiceServer {
 
    private UserDb              userDb                 = null;
    private WorkDb              workDb                 = null;
-
-
-   public static final SimpleDateFormat DB_DATE_FORMAT     = new SimpleDateFormat("yyyyMMdd");
-   public static final SimpleDateFormat DB_DATETIME_FORMAT = new SimpleDateFormat("yyyyMMddHHmmssSSS");
 
 
    private final Map<String, AutoLogoutCounter> counterMap = new HashMap<>();

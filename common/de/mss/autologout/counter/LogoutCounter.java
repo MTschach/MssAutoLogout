@@ -1,5 +1,6 @@
-package de.mss.autologout.server;
+package de.mss.autologout.counter;
 
+import de.mss.autologout.client.param.CheckCounterResponse;
 
 public class LogoutCounter {
 
@@ -183,5 +184,75 @@ public class LogoutCounter {
 
    private boolean limitReached(int limit, int checkInterval) {
       return this.maxMinutes > 0 && this.currentSeconds >= limit && this.currentSeconds < limit + checkInterval;
+   }
+
+
+   public boolean check(String userName, int checkInterval, CheckCounterResponse resp) {
+      if (resp == null) {
+         return false;
+      }
+
+      if (isForceLogoff()) {
+         resp.setForceLogout(Boolean.TRUE);
+         resp.setHeadLine("Info");
+         resp.setMessage("Hallo " + userName + ". Deine " + getName() + " ist abgelaufen. Du wirst automatisch abgemeldet.");
+         resp.setSpokenMessage("Hallo " + userName + ". Deine Zeit ist abgelaufen. Du wirst automatisch abgemeldet.");
+         return true;
+      }
+
+      if (isMinutesUntilForceLogoff()) {
+         resp.setHeadLine("Info");
+         resp
+               .setMessage(
+                     "Hallo "
+                           + userName
+                           + "! Deine "
+                           + getName()
+                           + " Zeit ist seit "
+                           + getMinutesOvertime()
+                           + " Minuten abgelaufen. Du wirst in "
+                           + getMinutesUntilFoceLogoff()
+                           + "Minuten abgemeldet.");
+         resp.setSpokenMessage("Hallo " + userName + ". Deine Zeit ist abgelaufen.");
+         return true;
+      }
+
+      if (isFirstWarning(checkInterval)) {
+         resp.setHeadLine("Info");
+         resp
+               .setMessage(
+                     "Hallo "
+                           + userName
+                           + "! Deine "
+                           + getName()
+                           + " Zeit läuft in "
+                           + (getMinutesForceLogoff() - getMinutesFirstWarning())
+                           + " Minuten ab");
+         resp.setSpokenMessage("Hallo " + userName + ". Deine Zeit ist abgelaufen.");
+         return true;
+      }
+
+      if (isMinutesReached(checkInterval)) {
+         resp.setHeadLine("Info");
+         resp.setMessage("Hallo " + userName + ". Deine Zeit ist abgelaufen.");
+         resp.setSpokenMessage("Hallo " + userName + ". Deine Zeit ist abgelaufen.");
+         return true;
+      }
+
+      if (isSecondInfo(checkInterval)) {
+         resp.setHeadLine("Info");
+         resp.setMessage("Hallo " + userName + "! Deine " + getName() + " Zeit läuft in " + getMinutesSecondInfo() + " Minuten ab.");
+         resp.setSpokenMessage("Hallo " + userName + ". Deine Zeit läuft bald ab.");
+         return true;
+      }
+
+      if (isFirstInfo(checkInterval)) {
+         resp.setHeadLine("Info");
+         resp.setMessage("Hallo " + userName + "! Deine " + getName() + " Zeit läuft in " + getMinutesFirstInfo() + " Minuten ab.");
+         resp.setSpokenMessage("Hallo " + userName + ". Deine Zeit läuft bald ab.");
+         return true;
+      }
+
+      return false;
    }
 }

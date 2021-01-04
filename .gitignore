@@ -8,3 +8,6 @@
 /*.conf
 /gradlew
 /gradlew.bat
+/*.sqlite3
+/*.log
+

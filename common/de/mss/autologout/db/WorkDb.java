@@ -1,4 +1,4 @@
-package de.mss.autologout.server;
+package de.mss.autologout.db;
 
 import java.io.Serializable;
 import java.math.BigInteger;
@@ -11,7 +11,8 @@ import java.sql.Statement;
 import java.util.Calendar;
 import java.util.TreeMap;
 
-import de.mss.autologout.param.AutoLogoutCounter;
+import de.mss.autologout.counter.AutoLogoutCounter;
+import de.mss.autologout.defs.Defs;
 import de.mss.utils.DateTimeTools;
 import de.mss.utils.Tools;
 import de.mss.utils.exception.MssException;
@@ -106,7 +107,7 @@ public class WorkDb implements Serializable {
          checkDate = DateTimeTools.addDate(checkDate, -1, Calendar.DAY_OF_MONTH);
          final int minutes = getDailyValue(userName, checkDate);
          alc.getWeeklyCounter().addMinutes(minutes);
-         alc.getCounterValues().put(AutoLogoutServer.DB_DATE_FORMAT.format(checkDate), BigInteger.valueOf(minutes));
+         alc.getCounterValues().put(Defs.DB_DATE_FORMAT.format(checkDate), BigInteger.valueOf(minutes));
       }
 
       return alc;
@@ -120,7 +121,7 @@ public class WorkDb implements Serializable {
                        "select MINUTES from USER_TIMES where USERNAME = '"
                              + userName
                              + "' and DATE = '"
-                             + AutoLogoutServer.DB_DATE_FORMAT.format(date)
+                             + Defs.DB_DATE_FORMAT.format(date)
                              + "'");
            ResultSet res = stmt.executeQuery();
       ) {
@@ -147,9 +148,29 @@ public class WorkDb implements Serializable {
                        "insert or replace into USER_TIMES (USERNAME, DATE, MINUTES) values ('"
                              + userName
                              + "', '"
-                             + AutoLogoutServer.DB_DATE_FORMAT.format(new java.util.Date())
+                             + Defs.DB_DATE_FORMAT.format(new java.util.Date())
                              + "', "
                              + counters.getDailyCounter().getCurrentMinutes()
+                             + ");")
+      ) {
+         stmt.executeUpdate();
+      }
+      catch (final SQLException e) {
+         throw new MssException(de.mss.autologout.exception.ErrorCodes.ERROR_SAVING_TIME, e, "could not update USER_TIMES");
+      }
+   }
+
+
+   public void saveTime(String userName, String date, int value) throws MssException {
+      try (
+           PreparedStatement stmt = this.dbCon
+                 .prepareStatement(
+                       "insert or replace into USER_TIMES (USERNAME, DATE, MINUTES) values ('"
+                             + userName
+                             + "', '"
+                             + date
+                             + "', "
+                             + value
                              + ");")
       ) {
          stmt.executeUpdate();
@@ -163,12 +184,12 @@ public class WorkDb implements Serializable {
    public void saveSpecialTime(String userName, java.util.Date date, Integer minutes, String reason) throws MssException {
       String sql;
       if (minutes == null && reason == null) {
-         sql = "delete from USER_TIMES where USERNAME = '" + userName + "' and DATE = '" + AutoLogoutServer.DB_DATETIME_FORMAT.format(date) + "';";
+         sql = "delete from USER_TIMES where USERNAME = '" + userName + "' and DATE = '" + Defs.DB_DATETIME_FORMAT.format(date) + "';";
       } else {
          sql = "insert or replace into USER_TIMES (USERNAME, DATE, MINUTES, REASON) values ('"
                + userName
                + "', '"
-               + AutoLogoutServer.DB_DATETIME_FORMAT.format(date)
+               + Defs.DB_DATETIME_FORMAT.format(date)
                + "', "
                + (minutes != null
                      ? minutes.toString()

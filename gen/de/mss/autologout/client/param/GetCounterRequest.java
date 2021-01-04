@@ -8,7 +8,7 @@ public class GetCounterRequest extends de.mss.net.webservice.WebServiceRequest {
 
    /**  */
    @javax.ws.rs.PathParam (value = "username")
-   private String userName = "null";
+   private String userName = null;
    
 
    public GetCounterRequest () {

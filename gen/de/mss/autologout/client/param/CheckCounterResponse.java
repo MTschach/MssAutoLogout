@@ -13,17 +13,17 @@ public class CheckCounterResponse extends de.mss.net.webservice.WebServiceRespon
 
    /**  */
    
-   private String headLine = "null";
+   private String headLine = null;
    
 
    /**  */
    
-   private String message = "null";
+   private String message = null;
    
 
    /**  */
    
-   private String spokenMessage = "null";
+   private String spokenMessage = null;
    
 
    public CheckCounterResponse () {

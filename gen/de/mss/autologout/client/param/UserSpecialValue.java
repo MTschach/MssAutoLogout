@@ -23,7 +23,7 @@ public class UserSpecialValue implements java.io.Serializable {
 
    /**  */
    
-   private String reason = "null";
+   private String reason = null;
    
 
    /**  */

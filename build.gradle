@@ -93,6 +93,8 @@ dependencies {
    clientCompile  group: 'de.dfki.mary'               , name: 'marytts-runtime'                    , version: '5.2'
    clientCompile  group: 'de.dfki.mary'               , name: 'marytts-lang-de'                    , version: '5.2'
    clientCompile  group: 'de.dfki.mary'               , name: 'voice-bits1-hsmm'                   , version: '5.2'
+   clientCompile  group: 'Mss'                        , name: 'MssDbUtils'                         , version: 'latest.release'
+   clientCompile  group: 'org.xerial'                 , name: 'sqlite-jdbc'                        , version: '3.7.2'
    
    serverCompile  group: 'Mss'                        , name: 'MssDbUtils'                         , version: 'latest.release'
    serverCompile  group: 'org.xerial'                 , name: 'sqlite-jdbc'                        , version: '3.7.2'

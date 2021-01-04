@@ -1,4 +1,4 @@
-package de.mss.autologout.server;
+package de.mss.autologout.db;
 
 import java.io.Serializable;
 import java.sql.Connection;
@@ -11,7 +11,9 @@ import java.util.List;
 
 import de.mss.autologout.client.param.ModifyUserBody;
 import de.mss.autologout.client.param.UserSpecialValue;
-import de.mss.autologout.param.AutoLogoutCounter;
+import de.mss.autologout.counter.AutoLogoutCounter;
+import de.mss.autologout.counter.LogoutCounter;
+import de.mss.autologout.defs.Defs;
 import de.mss.utils.Tools;
 import de.mss.utils.exception.MssException;
 
@@ -129,7 +131,7 @@ public class UserDb implements Serializable {
                        "select * from CONFIG_USER_SPECIAL where USERNAME = '"
                              + userName
                              + "' and DATE = '"
-                             + AutoLogoutServer.DB_DATE_FORMAT.format(new java.util.Date())
+                             + Defs.DB_DATE_FORMAT.format(new java.util.Date())
                              + "';")
       ) {
          if (res != null && res.next()) {
@@ -264,7 +266,7 @@ public class UserDb implements Serializable {
                      "delete from USER_CONFIG_SPECIAL where USERNAME = '"
                            + userName
                            + "' and DATE = '"
-                           + AutoLogoutServer.DB_DATE_FORMAT.format(usv.getDate())
+                           + Defs.DB_DATE_FORMAT.format(usv.getDate())
                            + "';");
       } else {
          sql
@@ -272,7 +274,7 @@ public class UserDb implements Serializable {
                      "insert or replace into USER_CONFIG_SPECIAL (USERNAME, DATE, MINUTES, LOCK, REASON) values ('"
                            + userName
                            + "', '"
-                           + AutoLogoutServer.DB_DATE_FORMAT.format(usv.getDate())
+                           + Defs.DB_DATE_FORMAT.format(usv.getDate())
                            + "', ");
          if (usv.getMinutes() != null) {
             sql.append(usv.getMinutes().toString() + ", ");

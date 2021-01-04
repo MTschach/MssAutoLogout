@@ -13,7 +13,7 @@ public class SetCounterBody implements java.io.Serializable {
 
    /**  */
    
-   private String reason = "null";
+   private String reason = null;
    
 
    public SetCounterBody () {

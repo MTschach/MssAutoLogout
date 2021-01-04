@@ -7,8 +7,8 @@ import java.util.TreeMap;
 import de.mss.autologout.client.param.CounterValues;
 import de.mss.autologout.client.param.GetAllCounterRequest;
 import de.mss.autologout.client.param.GetAllCounterResponse;
-import de.mss.autologout.param.AutoLogoutCounter;
-import de.mss.autologout.server.AutoLogoutServer;
+import de.mss.autologout.counter.AutoLogoutCounter;
+import de.mss.autologout.defs.Defs;
 import de.mss.autologout.server.AutoLogoutWebService;
 import de.mss.net.rest.RestMethod;
 import de.mss.utils.exception.MssException;
@@ -48,7 +48,7 @@ public class GetAllCounters extends AutoLogoutWebService<GetAllCounterRequest, G
          values.setValues(alc.getCounterValues());
          values
                .getValues()
-               .put(AutoLogoutServer.DB_DATE_FORMAT.format(new java.util.Date()), BigInteger.valueOf(alc.getDailyCounter().getCurrentMinutes()));
+               .put(Defs.DB_DATE_FORMAT.format(new java.util.Date()), BigInteger.valueOf(alc.getDailyCounter().getCurrentMinutes()));
          resp.getCounterValues().put(userName, values);
       }
 

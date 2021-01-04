@@ -8,12 +8,17 @@ public class CheckCounterRequest extends de.mss.net.webservice.WebServiceRequest
 
    /**  */
    @javax.ws.rs.PathParam (value = "username")
-   private String userName = "null";
+   private String userName = null;
    
 
    /**  */
    @javax.ws.rs.QueryParam (value = "checkInterval")
    private Integer checkInterval = null;
+   
+
+   /**  */
+   @javax.ws.rs.QueryParam (value = "currentCounter")
+   private Integer currentCounter = null;
    
 
    public CheckCounterRequest () {
@@ -27,11 +32,17 @@ public class CheckCounterRequest extends de.mss.net.webservice.WebServiceRequest
    public Integer getCheckInterval () { return this.checkInterval; }
    
 
+   public Integer getCurrentCounter () { return this.currentCounter; }
+   
+
 
    public void setUserName (String v) { this.userName = v; }
    
 
    public void setCheckInterval (Integer v) { this.checkInterval = v; }
+   
+
+   public void setCurrentCounter (Integer v) { this.currentCounter = v; }
    
 
 
@@ -45,10 +56,15 @@ public class CheckCounterRequest extends de.mss.net.webservice.WebServiceRequest
       if (this.checkInterval != null)
          sb.append("CheckInterval {" + this.checkInterval.toString() + "} ");
 
+      if (this.currentCounter != null)
+         sb.append("CurrentCounter {" + this.currentCounter.toString() + "} ");
+
       sb.append(super.toString());
       sb.append("] ");
       return sb.toString();
    }
+
+
 
 
 

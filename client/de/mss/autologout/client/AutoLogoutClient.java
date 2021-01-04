@@ -21,12 +21,20 @@ import org.apache.logging.log4j.Logger;
 
 import de.mss.autologout.client.param.CheckCounterRequest;
 import de.mss.autologout.client.param.CheckCounterResponse;
+import de.mss.autologout.client.param.GetUserRequest;
+import de.mss.autologout.client.param.GetUserResponse;
+import de.mss.autologout.client.param.ModifyUserBody;
 import de.mss.autologout.client.tts.TextToSpeech;
+import de.mss.autologout.counter.AutoLogoutCounter;
+import de.mss.autologout.counter.LogoutCounter;
+import de.mss.autologout.db.UserDb;
+import de.mss.autologout.db.WorkDb;
 import de.mss.configtools.ConfigFile;
 import de.mss.configtools.XmlConfigFile;
 import de.mss.net.rest.RestMethod;
 import de.mss.net.rest.RestServer;
 import de.mss.net.webservice.WebServiceJsonCaller;
+import de.mss.net.webservice.WebServiceResponseChecks;
 import de.mss.utils.Tools;
 import de.mss.utils.exception.MssException;
 import de.mss.utils.os.OsType;
@@ -51,11 +59,14 @@ public class AutoLogoutClient {
    private RestServer[]                                                    servers                = null;
    private WebServiceJsonCaller<CheckCounterRequest, CheckCounterResponse> caller;
 
+   private AutoLogoutCounter                                               localCounter           = new AutoLogoutCounter();
 
-   private static Logger logger = null;
+   private static Logger                                                   logger                 = null;
 
+   private UserDb                                                          userDb                 = null;
+   private WorkDb                                                          workDb                 = null;
 
-   private TextToSpeech tts = null;
+   private TextToSpeech                                                    tts                    = null;
 
 
    private static Logger getLogger() {
@@ -111,6 +122,14 @@ public class AutoLogoutClient {
       this.caller = new WebServiceJsonCaller<>();
 
       this.tts = initTts();
+
+      try {
+         this.userDb = new UserDb(this.cfgFile.getValue("de.mss.autologout.userdb", "user.sqlite3"));
+         this.workDb = new WorkDb(this.cfgFile.getValue("de.mss.autologout.workdb", "work.sqlite3"));
+      }
+      catch (final MssException e) {
+         e.printStackTrace();
+      }
    }
 
 
@@ -153,7 +172,7 @@ public class AutoLogoutClient {
    }
 
 
-   public void run() throws MssException {
+   public void run() {
       final long checkIntervalMillis = this.checkInterval * 1000;
 
       getLogger().log(Level.ALL, "AutoLogout is up and running");
@@ -187,7 +206,7 @@ public class AutoLogoutClient {
    }
 
 
-   private boolean checkCounter() throws MssException {
+   private boolean checkCounter() {
       if (this.lastUserName == null) {
          return true;
       }
@@ -200,9 +219,25 @@ public class AutoLogoutClient {
       final CheckCounterRequest request = new CheckCounterRequest();
       request.setUserName(this.lastUserName);
       request.setCheckInterval(Integer.valueOf(this.checkInterval));
+      request.setCurrentCounter(this.localCounter.getDailyCounter().getCurrentMinutes());
 
-      final CheckCounterResponse response = this.caller
-            .call("", this.servers, "v1/{username}/checkCounter", RestMethod.GET, request, new CheckCounterResponse(), 3);
+      CheckCounterResponse response = null;
+      try {
+         response = this.caller
+               .call("", this.servers, "v1/{username}/checkCounter", RestMethod.GET, request, new CheckCounterResponse(), 3);
+      }
+      catch (final MssException e) {
+         getLogger().error("using local counter", e);
+      }
+
+      if (!WebServiceResponseChecks.isResponseOk(response)) {
+         if (response == null) {
+            response = new CheckCounterResponse();
+         }
+         if (!this.localCounter.getWeeklyCounter().check(this.lastUserName, this.checkInterval, response)) {
+            this.localCounter.getDailyCounter().check(this.lastUserName, this.checkInterval, response);
+         }
+      }
 
       if (response == null) {
          return false;
@@ -257,6 +292,47 @@ public class AutoLogoutClient {
       }
 
       this.lastUserName = user;
+      this.localCounter = new AutoLogoutCounter();
+
+      final WebServiceJsonCaller<GetUserRequest, GetUserResponse> getUserCall = new WebServiceJsonCaller<>();
+      final GetUserRequest request = new GetUserRequest();
+      request.setUserName(user);
+      try {
+         final GetUserResponse response = getUserCall
+               .call("", this.servers, "v1/admin/{username}", RestMethod.GET, request, new GetUserResponse(), 3);
+
+         if (!WebServiceResponseChecks.isResponseOk(response)) {
+            this.localCounter.setDailycounter(new LogoutCounter(30, "täglich"));
+            this.localCounter.setWeeklyCounter(new LogoutCounter(210, "wöchentlich"));
+         } else {
+            this.localCounter.setDailycounter(new LogoutCounter(response.getDailyCounter(), "täglich"));
+            this.localCounter.setWeeklyCounter(new LogoutCounter(response.getWeeklyCounter(), "wöchentlich"));
+            if (response.getCounterValues() != null) {
+               this.localCounter.setCounterValues(response.getCounterValues().getValues());
+            }
+         }
+      }
+      catch (final MssException e) {
+         getLogger().error("using default values", e);
+         this.localCounter.setDailycounter(new LogoutCounter(30, "täglich"));
+         this.localCounter.setWeeklyCounter(new LogoutCounter(210, "wöchentlich"));
+      }
+
+      final ModifyUserBody data = new ModifyUserBody();
+      data.setDailyMinutes(this.localCounter.getDailyCounter().getMaxMinutes());
+      data.setWeeklyMinutes(this.localCounter.getWeeklyCounter().getMaxMinutes());
+      try {
+         this.userDb.changeUser(user, data);
+         if (this.localCounter.getCounterValues() != null) {
+            for (final Entry<String, BigInteger> entry : this.localCounter.getCounterValues().entrySet()) {
+               this.workDb.saveTime(user, entry.getKey(), entry.getValue().intValue());
+            }
+         }
+      }
+      catch (final Exception e) {
+         getLogger().error("Error while initializing local counter", e);
+      }
+
    }
 
 

@@ -2,7 +2,7 @@ package de.mss.autologout.server;
 
 import org.junit.Test;
 
-import de.mss.autologout.server.LogoutCounter;
+import de.mss.autologout.counter.LogoutCounter;
 import junit.framework.TestCase;
 
 public class LogoutCounterTest extends TestCase {
