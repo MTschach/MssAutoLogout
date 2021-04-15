@@ -32,6 +32,96 @@ public class UserDb implements Serializable {
    }
 
 
+   private void addUser(String userName, ModifyUserBody data) throws MssException {
+      if (data == null || data.getDailyMinutes() == null || data.getWeeklyMinutes() == null) {
+         throw new MssException(de.mss.autologout.exception.ErrorCodes.ERROR_CHANGE_USER, "incomplete data for adding new user");
+      }
+
+      try (Statement stmt = this.dbCon.createStatement()) {
+         stmt
+               .executeUpdate(
+                     "insert into CONFIG_USER (USERNAME, DAILY_MINUTES, WEEKLY_MINUTES) values ('"
+                           + userName
+                           + "', "
+                           + data.getDailyMinutes().toString()
+                           + ", "
+                           + data.getWeeklyMinutes().toString()
+                           + ");");
+      }
+      catch (final SQLException e) {
+         throw new MssException(de.mss.autologout.exception.ErrorCodes.ERROR_CHANGE_USER, e, "Could not add user " + userName);
+      }
+   }
+
+
+   public void changeUser(String userName, ModifyUserBody data) throws MssException {
+      initDatabase();
+
+      try (
+           Statement stmt = this.dbCon.createStatement();
+           ResultSet res = stmt.executeQuery("select count(*) as COUNT from CONFIG_USER where USERNAME = '" + userName + "';")
+      ) {
+         if (res == null || !res.next() || res.getInt("COUNT") == 0) {
+            addUser(userName, data);
+         } else if (data == null) {
+            deleteUser(userName);
+            return;
+         } else {
+            modifyUser(userName, data);
+         }
+
+         if (data != null && data.getSpecialValues() != null) {
+            saveSpecialValues(userName, data.getSpecialValues());
+         }
+      }
+      catch (final SQLException e) {
+         throw new MssException(de.mss.autologout.exception.ErrorCodes.ERROR_CHANGE_USER, e, "Could not change user " + userName);
+      }
+   }
+
+
+   private void closeDbCon() {
+      try {
+         if (this.dbCon != null && !this.dbCon.isClosed()) {
+            this.dbCon.close();
+         }
+      }
+      catch (final SQLException e) {
+         Tools.doNullLog(e);
+      }
+   }
+
+
+   private void deleteUser(String userName) throws MssException {
+      try (Statement stmt = this.dbCon.createStatement()) {
+         stmt.executeUpdate("delete from CONFIG_USER_SPECIAL where USERNAME = '" + userName + "';");
+         stmt.executeUpdate("delete from CONFIG_USER where USERNAME = '" + userName + "';");
+      }
+      catch (final SQLException e) {
+         throw new MssException(de.mss.autologout.exception.ErrorCodes.ERROR_CHANGE_USER, e, "Could not delete user " + userName);
+      }
+   }
+
+
+   public List<String> getUsers() throws MssException {
+      final List<String> ret = new ArrayList<>();
+
+      try (
+           Statement stmt = this.dbCon.createStatement();
+           ResultSet res = stmt.executeQuery("select distinct USERNAME from CONFIG_USER order by USERNAME;");
+      ) {
+         while (res.next()) {
+            ret.add(res.getString("USERNAME"));
+         }
+      }
+      catch (final SQLException e) {
+         throw new MssException(de.mss.autologout.exception.ErrorCodes.ERROR_LOADING_USER, e, "Could not load users");
+      }
+
+      return ret;
+   }
+
+
    private void init(String url) throws MssException {
       try {
          Class.forName("org.sqlite.JDBC");
@@ -66,18 +156,6 @@ public class UserDb implements Serializable {
             closeDbCon();
          }
       });
-   }
-
-
-   private void closeDbCon() {
-      try {
-         if (this.dbCon != null && !this.dbCon.isClosed()) {
-            this.dbCon.close();
-         }
-      }
-      catch (final SQLException e) {
-         Tools.doNullLog(e);
-      }
    }
 
 
@@ -155,65 +233,6 @@ public class UserDb implements Serializable {
    }
 
 
-   public void changeUser(String userName, ModifyUserBody data) throws MssException {
-      initDatabase();
-
-      try (
-           Statement stmt = this.dbCon.createStatement();
-           ResultSet res = stmt.executeQuery("select count(*) as COUNT from CONFIG_USER where USERNAME = '" + userName + "';")
-      ) {
-         if (res == null || !res.next() || res.getInt("COUNT") == 0) {
-            addUser(userName, data);
-         } else if (data == null) {
-            deleteUser(userName);
-            return;
-         } else {
-            modifyUser(userName, data);
-         }
-
-         if (data != null && data.getSpecialValues() != null) {
-            saveSpecialValues(userName, data.getSpecialValues());
-         }
-      }
-      catch (final SQLException e) {
-         throw new MssException(de.mss.autologout.exception.ErrorCodes.ERROR_CHANGE_USER, e, "Could not change user " + userName);
-      }
-   }
-
-
-   private void addUser(String userName, ModifyUserBody data) throws MssException {
-      if (data == null || data.getDailyMinutes() == null || data.getWeeklyMinutes() == null) {
-         throw new MssException(de.mss.autologout.exception.ErrorCodes.ERROR_CHANGE_USER, "incomplete data for adding new user");
-      }
-
-      try (Statement stmt = this.dbCon.createStatement()) {
-         stmt
-               .executeUpdate(
-                     "insert into CONFIG_USER (USERNAME, DAILY_MINUTES, WEEKLY_MINUTES) values ('"
-                           + userName
-                           + "', "
-                           + data.getDailyMinutes().toString()
-                           + ", "
-                           + data.getWeeklyMinutes().toString()
-                           + ");");
-      }
-      catch (final SQLException e) {
-         throw new MssException(de.mss.autologout.exception.ErrorCodes.ERROR_CHANGE_USER, e, "Could not add user " + userName);
-      }
-   }
-
-
-   private void deleteUser(String userName) throws MssException {
-      try (Statement stmt = this.dbCon.createStatement()) {
-         stmt.executeUpdate("delete from CONFIG_USER_SPECIAL where USERNAME = '" + userName + "';");
-         stmt.executeUpdate("delete from CONFIG_USER where USERNAME = '" + userName + "';");
-      }
-      catch (final SQLException e) {
-         throw new MssException(de.mss.autologout.exception.ErrorCodes.ERROR_CHANGE_USER, e, "Could not delete user " + userName);
-      }
-   }
-
-
    private void modifyUser(String userName, ModifyUserBody data) throws MssException {
       if (data == null) {
          throw new MssException(de.mss.autologout.exception.ErrorCodes.ERROR_CHANGE_USER, "incomplete data for modify user");
@@ -246,13 +265,6 @@ public class UserDb implements Serializable {
    }
 
 
-   private void saveSpecialValues(String userName, List<UserSpecialValue> specialValues) throws MssException {
-      for (final UserSpecialValue usv : specialValues) {
-         saveSpecialValue(userName, usv);
-      }
-   }
-
-
    private void saveSpecialValue(String userName, UserSpecialValue usv) throws MssException {
       if (usv == null || usv.getDate() == null) {
          return;
@@ -263,7 +275,7 @@ public class UserDb implements Serializable {
       if (Tools.isTrue(usv.getDelete())) {
          sql
                .append(
-                     "delete from USER_CONFIG_SPECIAL where USERNAME = '"
+                     "delete from CONFIG_USER_SPECIAL where USERNAME = '"
                            + userName
                            + "' and DATE = '"
                            + Defs.DB_DATE_FORMAT.format(usv.getDate())
@@ -271,7 +283,7 @@ public class UserDb implements Serializable {
       } else {
          sql
                .append(
-                     "insert or replace into USER_CONFIG_SPECIAL (USERNAME, DATE, MINUTES, LOCK, REASON) values ('"
+                     "insert or replace into CONFIG_USER_SPECIAL (USERNAME, DATE, MINUTES, LOCK, REASON) values ('"
                            + userName
                            + "', '"
                            + Defs.DB_DATE_FORMAT.format(usv.getDate())
@@ -283,15 +295,15 @@ public class UserDb implements Serializable {
          }
 
          if (usv.getLock() != null) {
-            sql.append(usv.getLock().toString() + ", ");
+            sql.append("'" + usv.getLock().toString() + "', ");
          } else {
             sql.append("null, ");
          }
 
          if (usv.getReason() != null && usv.getReason().length() <= 100) {
-            sql.append(usv.getReason() + ");");
+            sql.append("'" + usv.getReason() + "');");
          } else if (usv.getReason() != null && usv.getReason().length() > 100) {
-            sql.append(usv.getReason().substring(0, 100) + ");");
+            sql.append("'" + usv.getReason().substring(0, 100) + "');");
          } else {
             sql.append("null);");
          }
@@ -306,21 +318,9 @@ public class UserDb implements Serializable {
    }
 
 
-   public List<String> getUsers() throws MssException {
-      final List<String> ret = new ArrayList<>();
-
-      try (
-           Statement stmt = this.dbCon.createStatement();
-           ResultSet res = stmt.executeQuery("select distinct USERNAME from CONFIG_USER order by USERNAME;");
-      ) {
-         while (res.next()) {
-            ret.add(res.getString("USERNAME"));
-         }
+   private void saveSpecialValues(String userName, List<UserSpecialValue> specialValues) throws MssException {
+      for (final UserSpecialValue usv : specialValues) {
+         saveSpecialValue(userName, usv);
       }
-      catch (final SQLException e) {
-         throw new MssException(de.mss.autologout.exception.ErrorCodes.ERROR_LOADING_USER, e, "Could not load users");
-      }
-
-      return ret;
    }
 }

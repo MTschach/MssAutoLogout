@@ -31,6 +31,41 @@ public class WorkDb implements Serializable {
    }
 
 
+   private void closeDbCon() {
+      try {
+         if (this.dbCon != null && !this.dbCon.isClosed()) {
+            this.dbCon.close();
+         }
+      }
+      catch (final SQLException e) {
+         Tools.doNullLog(e);
+      }
+   }
+
+
+   private int getDailyValue(String userName, java.util.Date date) throws MssException {
+      try (
+           PreparedStatement stmt = this.dbCon
+                 .prepareStatement(
+                       "select MINUTES from USER_TIMES where USERNAME = '"
+                             + userName
+                             + "' and DATE = '"
+                             + Defs.DB_DATE_FORMAT.format(date)
+                             + "'");
+           ResultSet res = stmt.executeQuery();
+      ) {
+         if (res.next()) {
+            return res.getInt("MINUTES");
+         }
+      }
+      catch (final SQLException e) {
+         throw new MssException(e);
+      }
+
+      return 0;
+   }
+
+
    private void init(String url) throws MssException {
       this.dbUrl = url;
       try {
@@ -68,18 +103,6 @@ public class WorkDb implements Serializable {
    }
 
 
-   private void closeDbCon() {
-      try {
-         if (this.dbCon != null && !this.dbCon.isClosed()) {
-            this.dbCon.close();
-         }
-      }
-      catch (final SQLException e) {
-         Tools.doNullLog(e);
-      }
-   }
-
-
    private void initDatabase() throws MssException {
       initConnection();
 
@@ -114,73 +137,6 @@ public class WorkDb implements Serializable {
    }
 
 
-   private int getDailyValue(String userName, java.util.Date date) throws MssException {
-      try (
-           PreparedStatement stmt = this.dbCon
-                 .prepareStatement(
-                       "select MINUTES from USER_TIMES where USERNAME = '"
-                             + userName
-                             + "' and DATE = '"
-                             + Defs.DB_DATE_FORMAT.format(date)
-                             + "'");
-           ResultSet res = stmt.executeQuery();
-      ) {
-         if (res.next()) {
-            return res.getInt("MINUTES");
-         }
-      }
-      catch (final SQLException e) {
-         throw new MssException(e);
-      }
-
-      return 0;
-   }
-
-
-   public void saveTime(String userName, AutoLogoutCounter counters) throws MssException {
-      if (counters == null || counters.getDailyCounter() == null || counters.getDailyCounter().getMaxMinutes() <= 0) {
-         return;
-      }
-
-      try (
-           PreparedStatement stmt = this.dbCon
-                 .prepareStatement(
-                       "insert or replace into USER_TIMES (USERNAME, DATE, MINUTES) values ('"
-                             + userName
-                             + "', '"
-                             + Defs.DB_DATE_FORMAT.format(new java.util.Date())
-                             + "', "
-                             + counters.getDailyCounter().getCurrentMinutes()
-                             + ");")
-      ) {
-         stmt.executeUpdate();
-      }
-      catch (final SQLException e) {
-         throw new MssException(de.mss.autologout.exception.ErrorCodes.ERROR_SAVING_TIME, e, "could not update USER_TIMES");
-      }
-   }
-
-
-   public void saveTime(String userName, String date, int value) throws MssException {
-      try (
-           PreparedStatement stmt = this.dbCon
-                 .prepareStatement(
-                       "insert or replace into USER_TIMES (USERNAME, DATE, MINUTES) values ('"
-                             + userName
-                             + "', '"
-                             + date
-                             + "', "
-                             + value
-                             + ");")
-      ) {
-         stmt.executeUpdate();
-      }
-      catch (final SQLException e) {
-         throw new MssException(de.mss.autologout.exception.ErrorCodes.ERROR_SAVING_TIME, e, "could not update USER_TIMES");
-      }
-   }
-
-
    public void saveSpecialTime(String userName, java.util.Date date, Integer minutes, String reason) throws MssException {
       String sql;
       if (minutes == null && reason == null) {
@@ -206,6 +162,44 @@ public class WorkDb implements Serializable {
       }
       catch (final SQLException e) {
          throw new MssException(de.mss.autologout.exception.ErrorCodes.ERROR_SAVING_TIME, e, "Could not save special time for user " + userName);
+      }
+   }
+
+
+   public void saveTime(String userName, AutoLogoutCounter counters) throws MssException {
+      saveTime(userName, counters, new java.util.Date());
+   }
+
+
+   public void saveTime(String userName, AutoLogoutCounter counters, java.util.Date date) throws MssException {
+      if (counters == null || counters.getDailyCounter() == null || counters.getDailyCounter().getMaxMinutes() <= 0) {
+         return;
+      }
+      saveTime(userName, Defs.DB_DATE_FORMAT.format(date), counters.getDailyCounter().getCurrentMinutes());
+   }
+
+
+   public void saveTime(String userName, int minutes, java.util.Date date) throws MssException {
+      saveTime(userName, Defs.DB_DATE_FORMAT.format(date), minutes);
+   }
+
+
+   public void saveTime(String userName, String date, int value) throws MssException {
+      try (
+           PreparedStatement stmt = this.dbCon
+                 .prepareStatement(
+                       "insert or replace into USER_TIMES (USERNAME, DATE, MINUTES) values ('"
+                             + userName
+                             + "', '"
+                             + date
+                             + "', "
+                             + value
+                             + ");")
+      ) {
+         stmt.executeUpdate();
+      }
+      catch (final SQLException e) {
+         throw new MssException(de.mss.autologout.exception.ErrorCodes.ERROR_SAVING_TIME, e, "could not update USER_TIMES");
       }
    }
 }

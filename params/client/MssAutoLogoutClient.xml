@@ -34,9 +34,20 @@
 <class name="SetCounterBody" package="de.mss.autologout.client.param" implements="java.io.Serializable" version="537684144851606234">
    <variable name="value"                 type="Integer"       value="null"   required="true" />
    <variable name="reason"                type="String"        value="null" />
+   <variable name="date"                  type="java.util.Date" value="null" />
 </class>
 <class name="SetCounterResponse" package="de.mss.autologout.client.param" extends="de.mss.net.webservice.WebServiceResponse" version="53768414485163464">
    <variable name="counterValues"         type="de.mss.autologout.client.param.CounterValues"   value="null" />
+</class>
+<class name="LockUserRequest" package="de.mss.autologout.client.param" extends="AuthTokenRequest" version="5837825646349542334">
+   <variable name="body"                  type="de.mss.autologout.client.param.LockUserBody" value="null" annotation="@de.mss.net.webservice.BodyParam (value = &quot;body&quot;)"   required="true" />
+</class>
+<class name="LockUserBody" package="de.mss.autologout.client.param" implements="java.io.Serializable" version="537684144851606234">
+   <variable name="lock"                  type="Boolean"       value="null"   required="true" />
+   <variable name="date"                  type="java.util.Date"   value="null" />
+   <variable name="reason"                type="String"        value="null" />
+</class>
+<class name="LockUserResponse" package="de.mss.autologout.client.param" extends="de.mss.net.webservice.WebServiceResponse" version="53768414485163464">
 </class>
 <class name="ModifiyUserRequest" package="de.mss.autologout.client.param" extends="AuthTokenRequest" version="23544575678">
    <variable name="body"                  type="de.mss.autologout.client.param.ModifyUserBody"  value="null"   annotation="@de.mss.net.webservice.BodyParam (value = &quot;body&quot;)" />

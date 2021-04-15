@@ -9,17 +9,11 @@ import de.mss.utils.exception.MssException;
 
 public class ModifyUser extends AutoLogoutAuthTokenWebService<ModifiyUserRequest> {
 
-   public ModifyUser() {
-      super(ModifiyUserRequest::new, WebServiceResponse::new);
-   }
-
-
    private static final long serialVersionUID = 6568891347882291391L;
 
 
-   @Override
-   public String getPath() {
-      return "/admin/{username}/modify";
+   public ModifyUser() {
+      super(ModifiyUserRequest::new, WebServiceResponse::new);
    }
 
 
@@ -30,9 +24,16 @@ public class ModifyUser extends AutoLogoutAuthTokenWebService<ModifiyUserRequest
 
 
    @Override
+   public String getPath() {
+      return "/admin/{username}/modify";
+   }
+
+
+   @Override
    public WebServiceResponse handleRequest(String loggingId, ModifiyUserRequest req) throws MssException {
 
       this.server.getUserDb().changeUser(req.getUserName(), req.getBody());
+      this.server.loadUser(req.getUserName(), true);
 
       return WebService.getDefaultOkResponse();
    }

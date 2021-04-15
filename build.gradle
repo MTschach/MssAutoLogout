@@ -10,7 +10,7 @@ buildscript {
    dependencies {
       classpath 'com.android.tools.build:gradle:3.2.1'
       classpath 'com.github.dcendents:android-maven-gradle-plugin:1.4.1'
-      classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.+'
+//      classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.+'
     }
 }
 
@@ -19,7 +19,7 @@ allprojects {
       mavenLocal()
       jcenter()
       maven {
-         url "https://dl.bintray.com/mtschach/Mss"
+         url 'https://mtschach.jfrog.io/artifactory/mss-repo'
       }
       maven {
          url "https://oss.sonatype.org/content/repositories/snapshots"

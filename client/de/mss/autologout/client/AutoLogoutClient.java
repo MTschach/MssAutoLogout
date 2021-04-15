@@ -8,6 +8,7 @@ import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.UUID;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -41,33 +42,13 @@ import de.mss.utils.os.OsType;
 
 public class AutoLogoutClient {
 
-   private static final String                                             CMD_OPTION_CONFIG_FILE = "config";
+   private static final String CMD_OPTION_CONFIG_FILE = "config";
 
-   public static final String                                              CFG_KEY_BASE           = "de.mss.autologout";
-   private static final String                                             CFG_KEY_RUN_INTERVAL   = CFG_KEY_BASE + ".run.interval";
-   private static final String                                             CFG_KEY_SERVER         = CFG_KEY_BASE + ".url";
+   public static final String  CFG_KEY_BASE           = "de.mss.autologout";
+   private static final String CFG_KEY_RUN_INTERVAL   = CFG_KEY_BASE + ".run.interval";
+   private static final String CFG_KEY_SERVER         = CFG_KEY_BASE + ".url";
 
-   private String                                                          cfgFileName            = "autologout.conf";
-   private ConfigFile                                                      cfgFile                = null;
-
-   private String                                                          lastUserName           = null;
-
-   private int                                                             checkInterval          = 60;
-
-   private boolean                                                         isRunning              = true;
-
-   private RestServer[]                                                    servers                = null;
-   private WebServiceJsonCaller<CheckCounterRequest, CheckCounterResponse> caller;
-
-   private AutoLogoutCounter                                               localCounter           = new AutoLogoutCounter();
-
-   private static Logger                                                   logger                 = null;
-
-   private UserDb                                                          userDb                 = null;
-   private WorkDb                                                          workDb                 = null;
-
-   private TextToSpeech                                                    tts                    = null;
-
+   private static Logger       logger                 = null;
 
    private static Logger getLogger() {
       if (logger == null) {
@@ -78,22 +59,162 @@ public class AutoLogoutClient {
    }
 
 
+   public static final void main(String[] args) {
+      try {
+         final AutoLogoutClient al = new AutoLogoutClient(args);
+         al.run();
+      }
+      catch (final Exception e) {
+         getLogger().error("", e);
+      }
+   }
+
+   private String                                                          cfgFileName   = "autologout.conf";
+
+   private ConfigFile                                                      cfgFile       = null;
+
+   private String                                                          lastUserName  = null;
+   private int                                                             checkInterval = 60;
+
+   private boolean                                                         isRunning     = true;
+
+   private RestServer[]                                                    servers       = null;
+
+   private WebServiceJsonCaller<CheckCounterRequest, CheckCounterResponse> caller;
+   private AutoLogoutCounter                                               localCounter  = new AutoLogoutCounter();
+
+   private UserDb                                                          userDb        = null;
+
+
+   private WorkDb workDb = null;
+
+
+   private TextToSpeech tts = null;
+
+
    public AutoLogoutClient(String[] args) throws ParseException, MssException {
       init(args);
    }
 
 
-   public void setTts(TextToSpeech t) {
-      this.tts = t;
+   private boolean checkCounter(String loggingId) {
+      if (this.lastUserName == null) {
+         return true;
+      }
+
+      final File f = new File(System.getProperty("user.home") + File.separator + ".disableAutologout");
+      if (f.exists()) {
+         return true;
+      }
+
+      final CheckCounterRequest request = new CheckCounterRequest();
+      request.setUserName(this.lastUserName);
+      request.setCheckInterval(Integer.valueOf(this.checkInterval));
+      request.setCurrentCounter(this.localCounter.getDailyCounter().getCurrentMinutes());
+
+      CheckCounterResponse response = null;
+      try {
+         response = this.caller
+               .call(loggingId, this.servers, "v1/{username}/checkCounter", RestMethod.GET, request, new CheckCounterResponse(), 3);
+      }
+      catch (final MssException e) {
+         getLogger().error("using local counter", e);
+      }
+
+      if (!WebServiceResponseChecks.isResponseOk(response)) {
+         if (response == null) {
+            response = new CheckCounterResponse();
+         }
+         if (!this.localCounter.getWeeklyCounter().check(this.lastUserName, this.checkInterval, response)) {
+            this.localCounter.getDailyCounter().check(this.lastUserName, this.checkInterval, response);
+         }
+      }
+
+      if (response == null) {
+         return false;
+      }
+
+      if (Tools.isSet(response.getMessage())) {
+         showInfo(response.getHeadLine(), response.getMessage());
+         speak(response.getSpokenMessage());
+      }
+
+      if (response.getForceLogout() != null && response.getForceLogout().compareTo(Boolean.TRUE) == 0) {
+         logout(10);
+      }
+
+      return true;
    }
 
 
-   private void speak(String msg) {
-      if (this.tts == null || !de.mss.utils.Tools.isSet(msg)) {
+   private void checkForUser(String loggingId) {
+      final String user = getLoggedInUser();
+      if (!Tools.isSet(user)) {
+         this.lastUserName = null;
          return;
       }
 
-      this.tts.speak(msg, 2.0f, false, true);
+      if (user.equals(this.lastUserName)) {
+         return;
+      }
+
+      this.lastUserName = user;
+      this.localCounter = new AutoLogoutCounter();
+
+      final WebServiceJsonCaller<GetUserRequest, GetUserResponse> getUserCall = new WebServiceJsonCaller<>();
+      final GetUserRequest request = new GetUserRequest();
+      request.setUserName(user);
+      try {
+         final GetUserResponse response = getUserCall
+               .call(loggingId, this.servers, "v1/admin/{username}", RestMethod.GET, request, new GetUserResponse(), 3);
+
+         if (!WebServiceResponseChecks.isResponseOk(response)) {
+            this.localCounter.setDailycounter(new LogoutCounter(30, "täglich"));
+            this.localCounter.setWeeklyCounter(new LogoutCounter(210, "wöchentlich"));
+         } else {
+            this.localCounter.setDailycounter(new LogoutCounter(response.getDailyCounter(), "täglich"));
+            this.localCounter.setWeeklyCounter(new LogoutCounter(response.getWeeklyCounter(), "wöchentlich"));
+            if (response.getCounterValues() != null) {
+               this.localCounter.setCounterValues(response.getCounterValues().getValues());
+            }
+         }
+      }
+      catch (final MssException e) {
+         getLogger().error("using default values", e);
+         this.localCounter.setDailycounter(new LogoutCounter(30, "täglich"));
+         this.localCounter.setWeeklyCounter(new LogoutCounter(210, "wöchentlich"));
+      }
+
+      final ModifyUserBody data = new ModifyUserBody();
+      data.setDailyMinutes(this.localCounter.getDailyCounter().getMaxMinutes());
+      data.setWeeklyMinutes(this.localCounter.getWeeklyCounter().getMaxMinutes());
+      try {
+         this.userDb.changeUser(user, data);
+         if (this.localCounter.getCounterValues() != null) {
+            for (final Entry<String, BigInteger> entry : this.localCounter.getCounterValues().entrySet()) {
+               this.workDb.saveTime(user, entry.getKey(), entry.getValue().intValue());
+            }
+         }
+      }
+      catch (final Exception e) {
+         getLogger().error("Error while initializing local counter", e);
+      }
+
+   }
+
+
+   public boolean checkRunning() {
+      return this.isRunning;
+   }
+
+
+   public ConfigFile getConfig() {
+      return this.cfgFile;
+   }
+
+
+   private String getLoggedInUser() {
+      return runCommandAndReturnCmdOutput("username");
    }
 
 
@@ -162,13 +283,17 @@ public class AutoLogoutClient {
    }
 
 
-   public ConfigFile getConfig() {
-      return this.cfgFile;
-   }
+   private void logout(long sec) {
+      getLogger().debug("logout for user " + this.lastUserName);
 
+      try {
+         Thread.sleep(sec * 1000);
+      }
+      catch (final InterruptedException e) {
+         getLogger().error(e);
+      }
 
-   public void stop() {
-      this.isRunning = false;
+      runCommand("logoff", null);
    }
 
 
@@ -195,167 +320,16 @@ public class AutoLogoutClient {
       while (checkRunning()) {
          final long nextRun = System.currentTimeMillis() + checkIntervalMillis;
 
-         checkForUser();
+         final String loggingId = UUID.randomUUID().toString();
 
-         checkCounter();
+         checkForUser(loggingId);
+
+         checkCounter(loggingId);
 
          waitUntil(nextRun);
       }
 
       getLogger().log(Level.ALL, "AutoLogout is shutting down");
-   }
-
-
-   private boolean checkCounter() {
-      if (this.lastUserName == null) {
-         return true;
-      }
-
-      final File f = new File(System.getProperty("user.home") + File.separator + ".disableAutologout");
-      if (f.exists()) {
-         return true;
-      }
-
-      final CheckCounterRequest request = new CheckCounterRequest();
-      request.setUserName(this.lastUserName);
-      request.setCheckInterval(Integer.valueOf(this.checkInterval));
-      request.setCurrentCounter(this.localCounter.getDailyCounter().getCurrentMinutes());
-
-      CheckCounterResponse response = null;
-      try {
-         response = this.caller
-               .call("", this.servers, "v1/{username}/checkCounter", RestMethod.GET, request, new CheckCounterResponse(), 3);
-      }
-      catch (final MssException e) {
-         getLogger().error("using local counter", e);
-      }
-
-      if (!WebServiceResponseChecks.isResponseOk(response)) {
-         if (response == null) {
-            response = new CheckCounterResponse();
-         }
-         if (!this.localCounter.getWeeklyCounter().check(this.lastUserName, this.checkInterval, response)) {
-            this.localCounter.getDailyCounter().check(this.lastUserName, this.checkInterval, response);
-         }
-      }
-
-      if (response == null) {
-         return false;
-      }
-
-      if (Tools.isSet(response.getMessage())) {
-         showInfo(response.getHeadLine(), response.getMessage());
-         speak(response.getSpokenMessage());
-      }
-
-      if (response.getForceLogout() != null && response.getForceLogout().compareTo(Boolean.TRUE) == 0) {
-         logout(10);
-      }
-
-      return true;
-   }
-
-
-   private void logout(long sec) {
-      getLogger().debug("logout for user " + this.lastUserName);
-
-      try {
-         Thread.sleep(sec * 1000);
-      }
-      catch (final InterruptedException e) {
-         getLogger().error(e);
-      }
-
-      runCommand("logoff", null);
-   }
-
-
-   private void showInfo(String headline, String message) {
-      getLogger().debug("showInfo for user " + this.lastUserName + " headline: '" + headline + "'; message: '" + message + "'");
-
-      final Map<String, String> params = new HashMap<>();
-      params.put("HEADLINE", headline);
-      params.put("MESSAGE", message);
-      runCommand("notify", params);
-   }
-
-
-   private void checkForUser() {
-      final String user = getLoggedInUser();
-      if (!Tools.isSet(user)) {
-         this.lastUserName = null;
-         return;
-      }
-
-      if (user.equals(this.lastUserName)) {
-         return;
-      }
-
-      this.lastUserName = user;
-      this.localCounter = new AutoLogoutCounter();
-
-      final WebServiceJsonCaller<GetUserRequest, GetUserResponse> getUserCall = new WebServiceJsonCaller<>();
-      final GetUserRequest request = new GetUserRequest();
-      request.setUserName(user);
-      try {
-         final GetUserResponse response = getUserCall
-               .call("", this.servers, "v1/admin/{username}", RestMethod.GET, request, new GetUserResponse(), 3);
-
-         if (!WebServiceResponseChecks.isResponseOk(response)) {
-            this.localCounter.setDailycounter(new LogoutCounter(30, "täglich"));
-            this.localCounter.setWeeklyCounter(new LogoutCounter(210, "wöchentlich"));
-         } else {
-            this.localCounter.setDailycounter(new LogoutCounter(response.getDailyCounter(), "täglich"));
-            this.localCounter.setWeeklyCounter(new LogoutCounter(response.getWeeklyCounter(), "wöchentlich"));
-            if (response.getCounterValues() != null) {
-               this.localCounter.setCounterValues(response.getCounterValues().getValues());
-            }
-         }
-      }
-      catch (final MssException e) {
-         getLogger().error("using default values", e);
-         this.localCounter.setDailycounter(new LogoutCounter(30, "täglich"));
-         this.localCounter.setWeeklyCounter(new LogoutCounter(210, "wöchentlich"));
-      }
-
-      final ModifyUserBody data = new ModifyUserBody();
-      data.setDailyMinutes(this.localCounter.getDailyCounter().getMaxMinutes());
-      data.setWeeklyMinutes(this.localCounter.getWeeklyCounter().getMaxMinutes());
-      try {
-         this.userDb.changeUser(user, data);
-         if (this.localCounter.getCounterValues() != null) {
-            for (final Entry<String, BigInteger> entry : this.localCounter.getCounterValues().entrySet()) {
-               this.workDb.saveTime(user, entry.getKey(), entry.getValue().intValue());
-            }
-         }
-      }
-      catch (final Exception e) {
-         getLogger().error("Error while initializing local counter", e);
-      }
-
-   }
-
-
-   private String getLoggedInUser() {
-      return runCommandAndReturnCmdOutput("username");
-   }
-
-
-   private String runCommandAndReturnCmdOutput(String commandFromConfig) {
-      final Process p = runCommand(commandFromConfig, null);
-      if (p == null) {
-         return null;
-      }
-
-      String line = null;
-      try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
-         line = br.readLine();
-      }
-      catch (final IOException e) {
-         getLogger().error("Read line failed", e);
-      }
-
-      return line;
    }
 
 
@@ -399,8 +373,50 @@ public class AutoLogoutClient {
    }
 
 
-   public boolean checkRunning() {
-      return this.isRunning;
+   private String runCommandAndReturnCmdOutput(String commandFromConfig) {
+      final Process p = runCommand(commandFromConfig, null);
+      if (p == null) {
+         return null;
+      }
+
+      String line = null;
+      try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
+         line = br.readLine();
+      }
+      catch (final IOException e) {
+         getLogger().error("Read line failed", e);
+      }
+
+      return line;
+   }
+
+
+   public void setTts(TextToSpeech t) {
+      this.tts = t;
+   }
+
+
+   private void showInfo(String headline, String message) {
+      getLogger().debug("showInfo for user " + this.lastUserName + " headline: '" + headline + "'; message: '" + message + "'");
+
+      final Map<String, String> params = new HashMap<>();
+      params.put("HEADLINE", headline);
+      params.put("MESSAGE", message);
+      runCommand("notify", params);
+   }
+
+
+   private void speak(String msg) {
+      if (this.tts == null || !de.mss.utils.Tools.isSet(msg)) {
+         return;
+      }
+
+      this.tts.speak(msg, 2.0f, false, true);
+   }
+
+
+   public void stop() {
+      this.isRunning = false;
    }
 
 
@@ -413,17 +429,6 @@ public class AutoLogoutClient {
 
       try {
          Thread.sleep(waitFor);
-      }
-      catch (final Exception e) {
-         getLogger().error("", e);
-      }
-   }
-
-
-   public static final void main(String[] args) {
-      try {
-         final AutoLogoutClient al = new AutoLogoutClient(args);
-         al.run();
       }
       catch (final Exception e) {
          getLogger().error("", e);

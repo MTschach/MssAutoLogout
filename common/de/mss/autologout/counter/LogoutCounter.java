@@ -28,78 +28,13 @@ public class LogoutCounter {
    }
 
 
-   public String getName() {
-      return this.name;
+   public void addMinutes(int minutes) {
+      this.currentSeconds += minutes * 60;
    }
 
 
-   public int getMaxMinutes() {
-      return this.maxMinutes;
-   }
-
-
-   public int getMinutesFirstInfo() {
-      return this.minutesFirstInfo;
-   }
-
-
-   public int getMinutesSecondInfo() {
-      return this.minutesSecondInfo;
-   }
-
-
-   public int getMinutesFirstWarning() {
-      return this.minutesFirstWarning;
-   }
-
-
-   public int getMinutesForceLogoff() {
-      return this.minutesForceLogoff;
-   }
-
-
-   public int getMinutesOvertime() {
-      return getCurrentMinutes() - getMaxMinutes();
-   }
-
-
-   public String getDate() {
-      return this.date;
-   }
-
-
-   public void setMaxMinutes(int minutes) {
-      this.maxMinutes = minutes;
-      calculateTimers();
-   }
-
-
-   public void setMinutesFirstInfo(int minutes) {
-      this.minutesFirstInfo = minutes;
-      calculateTimers();
-   }
-
-
-   public void setMinutesSecondInfo(int minutes) {
-      this.minutesSecondInfo = minutes;
-      calculateTimers();
-   }
-
-
-   public void setMinutesFirstWarning(int minutes) {
-      this.minutesFirstWarning = minutes;
-      calculateTimers();
-   }
-
-
-   public void setMinutesForceLogoff(int minutes) {
-      this.minutesForceLogoff = minutes;
-      calculateTimers();
-   }
-
-
-   public void setDate(String d) {
-      this.date = d;
+   public void addSeconds(int seconds) {
+      this.currentSeconds += seconds;
    }
 
 
@@ -113,82 +48,12 @@ public class LogoutCounter {
    }
 
 
-   public void reset() {
-      this.currentSeconds = 0;
-   }
-
-
-   public void addSeconds(int seconds) {
-      this.currentSeconds += seconds;
-   }
-
-
-   public void addMinutes(int minutes) {
-      this.currentSeconds += minutes * 60;
-   }
-
-
-   public int getCurrentSeconds() {
-      return this.currentSeconds;
-   }
-
-
-   public int getCurrentMinutes() {
-      return this.currentSeconds / 60;
-   }
-
-
-   public boolean isFirstInfo(int checkInterval) {
-      return limitReached(this.secondsFirstInfo, checkInterval);
-   }
-
-
-   public boolean isSecondInfo(int checkInterval) {
-      return limitReached(this.secondsSecondInfo, checkInterval);
-   }
-
-
-   public boolean isMinutesReached(int checkInterval) {
-      return limitReached(this.maxSeconds, checkInterval);
-   }
-
-
-   public boolean isFirstWarning(int checkInterval) {
-      return limitReached(this.secondsFirstWarning, checkInterval);
-   }
-
-
-   public boolean isMinutesUntilForceLogoff() {
-      if (this.currentSeconds <= this.secondsFirstWarning) {
+   public boolean check(String userName, int checkInterval, CheckCounterResponse resp) {
+      if (resp == null) {
          return false;
       }
 
-      return this.currentSeconds < this.secondsForceLogoff;
-   }
-
-
-   public int getMinutesUntilFoceLogoff() {
-      final int left = this.secondsForceLogoff - this.currentSeconds;
-      if (left <= 0) {
-         return 0;
-      }
-
-      return left / 60;
-   }
-
-
-   public boolean isForceLogoff() {
-      return this.maxMinutes > 0 && this.currentSeconds >= this.secondsForceLogoff;
-   }
-
-
-   private boolean limitReached(int limit, int checkInterval) {
-      return this.maxMinutes > 0 && this.currentSeconds >= limit && this.currentSeconds < limit + checkInterval;
-   }
-
-
-   public boolean check(String userName, int checkInterval, CheckCounterResponse resp) {
-      if (resp == null) {
+      if (this.maxMinutes <= 0) {
          return false;
       }
 
@@ -254,5 +119,144 @@ public class LogoutCounter {
       }
 
       return false;
+   }
+
+
+   public int getCurrentMinutes() {
+      return this.currentSeconds / 60;
+   }
+
+
+   public int getCurrentSeconds() {
+      return this.currentSeconds;
+   }
+
+
+   public String getDate() {
+      return this.date;
+   }
+
+
+   public int getMaxMinutes() {
+      return this.maxMinutes;
+   }
+
+
+   public int getMinutesFirstInfo() {
+      return this.minutesFirstInfo;
+   }
+
+
+   public int getMinutesFirstWarning() {
+      return this.minutesFirstWarning;
+   }
+
+
+   public int getMinutesForceLogoff() {
+      return this.minutesForceLogoff;
+   }
+
+
+   public int getMinutesOvertime() {
+      return getCurrentMinutes() - getMaxMinutes();
+   }
+
+
+   public int getMinutesSecondInfo() {
+      return this.minutesSecondInfo;
+   }
+
+
+   public int getMinutesUntilFoceLogoff() {
+      final int left = this.secondsForceLogoff - this.currentSeconds;
+      if (left <= 0) {
+         return 0;
+      }
+
+      return left / 60;
+   }
+
+
+   public String getName() {
+      return this.name;
+   }
+
+
+   public boolean isFirstInfo(int checkInterval) {
+      return limitReached(this.secondsFirstInfo, checkInterval);
+   }
+
+
+   public boolean isFirstWarning(int checkInterval) {
+      return limitReached(this.secondsFirstWarning, checkInterval);
+   }
+
+
+   public boolean isForceLogoff() {
+      return this.maxMinutes > 0 && this.currentSeconds >= this.secondsForceLogoff;
+   }
+
+
+   public boolean isMinutesReached(int checkInterval) {
+      return limitReached(this.maxSeconds, checkInterval);
+   }
+
+
+   public boolean isMinutesUntilForceLogoff() {
+      if (this.currentSeconds <= this.secondsFirstWarning) {
+         return false;
+      }
+
+      return this.currentSeconds < this.secondsForceLogoff;
+   }
+
+
+   public boolean isSecondInfo(int checkInterval) {
+      return limitReached(this.secondsSecondInfo, checkInterval);
+   }
+
+
+   private boolean limitReached(int limit, int checkInterval) {
+      return this.maxMinutes > 0 && this.currentSeconds >= limit && this.currentSeconds < limit + checkInterval;
+   }
+
+
+   public void reset() {
+      this.currentSeconds = 0;
+   }
+
+
+   public void setDate(String d) {
+      this.date = d;
+   }
+
+
+   public void setMaxMinutes(int minutes) {
+      this.maxMinutes = minutes;
+      calculateTimers();
+   }
+
+
+   public void setMinutesFirstInfo(int minutes) {
+      this.minutesFirstInfo = minutes;
+      calculateTimers();
+   }
+
+
+   public void setMinutesFirstWarning(int minutes) {
+      this.minutesFirstWarning = minutes;
+      calculateTimers();
+   }
+
+
+   public void setMinutesForceLogoff(int minutes) {
+      this.minutesForceLogoff = minutes;
+      calculateTimers();
+   }
+
+
+   public void setMinutesSecondInfo(int minutes) {
+      this.minutesSecondInfo = minutes;
+      calculateTimers();
    }
 }
