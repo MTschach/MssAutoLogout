@@ -15,6 +15,7 @@
             <interval>30</interval>
          </run>
          <url>http://localhost:21080</url>
+         <validusers>user1;user2;user3</validusers>
       </autologout>
    </mss>
 </de>

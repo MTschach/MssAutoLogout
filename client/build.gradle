@@ -1,0 +1,101 @@
+apply plugin: 'java'
+apply plugin: 'application'
+apply plugin: 'eclipse'
+
+//apply from: 'https://raw.githubusercontent.com/MTschach/MssUtils/master/deploy.gradle'
+
+apply from: 'https://raw.githubusercontent.com/MTschach/MssUtils/master/artifactory.gradle'
+
+apply from: 'https://raw.githubusercontent.com/MTschach/MssUtils/master/eclipse.gradle'
+
+
+def artifact = new Properties()
+//artifact.load(new FileInputStream("${project.projectDir}${File.separator}..${File.separator}deploy.settings"))
+
+version = artifact.version
+
+buildscript {
+   apply from: 'https://raw.githubusercontent.com/MTschach/MssUtils/master/buildscript.gradle'
+}
+
+allprojects {
+   repositories {
+      maven {
+         url "https://oss.sonatype.org/content/repositories/snapshots"
+      }
+      maven {
+         url "https://mvnrepository.com/artifact/de.dfki.mary/marytts-runtime"
+      }
+      maven {
+         url "https://mvnrepository.com/artifact/de.dfki.mary/marytts-lang-de"
+	  }
+   }
+}
+
+
+configurations {
+   genClasses
+   implementation
+   testImplementation.extendsFrom implementation
+   clientDeps.extendsFrom implementation
+}
+
+
+dependencies {
+   implementation       project(':MssAutoLogoutShared')
+   implementation       project(':MssAutoLogoutClientLib')
+   implementation       group: 'org.apache.httpcomponents'                    , name: 'httpcore'                        , version: "${httpcoreVersion}"
+   implementation       group: 'org.apache.httpcomponents'                    , name: 'httpclient'                      , version: "${httpclientVersion}"
+   implementation       group: 'Mss'                                          , name: 'MssUtils'                        , version: 'latest.release'
+   implementation       group: 'Mss'                                          , name: 'MssConfigTools'                  , version: 'latest.release'
+   implementation       group: 'Mss'                                          , name: 'MssNetUtils'                     , version: 'latest.release'
+   implementation       group: 'Mss'                                          , name: 'MssDbUtils'                      , version: 'latest.release'
+   implementation       group: 'net.sf.sociaal'                               , name: 'freetts'                         , version: '1.2.2'
+   implementation       group: 'de.dfki.mary'                                 , name: 'marytts-runtime'                 , version: '5.2'
+   implementation       group: 'de.dfki.mary'                                 , name: 'marytts-lang-de'                 , version: '5.2'
+   implementation       group: 'de.dfki.mary'                                 , name: 'voice-bits1-hsmm'                , version: '5.2'
+   implementation       group: 'commons-cli'                                  , name: 'commons-cli'                     , version: "${commonsCliVersion}"
+   implementation       group: 'org.apache.logging.log4j'                     , name: 'log4j-core'                      , version: "${loggingVersion}"
+   implementation       group: 'org.apache.logging.log4j'                     , name: 'log4j-api'                       , version: "${loggingVersion}"
+   implementation       group: 'org.xerial'                                   , name: 'sqlite-jdbc'                     , version: "${sqliteVersion}"
+}
+
+sourceSets {
+   main {
+      java {
+         srcDir 'src'
+      }
+   }
+   
+   test {
+      java {
+         srcDir 'test'
+      }
+   }
+}
+
+compileJava.dependsOn ':MssAutoLogoutClientLib:build'
+
+task copyDependencies(type: Copy) {
+   from {
+      configurations.clientDeps
+//      exclude ('clientlib.jar', 'shared.jar')
+   }
+   into "$buildDir/libs/libs"
+}
+
+def requiredLibs= ['shared.jar', 'clientlib.jar']
+
+jar {
+   duplicatesStrategy = DuplicatesStrategy.INCLUDE
+   manifest {
+      attributes "MainClass": "de.mss.autologout.client.AutoLogoutClient"
+   }
+   from {
+      configurations.runtimeClasspath.collect {
+         if (it.name in requiredLibs) {
+            it.isDirectory() ? it : zipTree(it)
+         }
+      }
+   }
+}

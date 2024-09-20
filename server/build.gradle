@@ -1,0 +1,106 @@
+apply plugin: 'java-library'
+apply plugin: 'eclipse'
+
+//apply from: 'https://raw.githubusercontent.com/MTschach/MssUtils/master/deploy.gradle'
+
+apply from: 'https://raw.githubusercontent.com/MTschach/MssUtils/master/artifactory.gradle'
+
+apply from: 'https://raw.githubusercontent.com/MTschach/MssUtils/master/eclipse.gradle'
+
+
+def artifact = new Properties()
+//artifact.load(new FileInputStream("${project.projectDir}${File.separator}..${File.separator}deploy.settings"))
+
+version = artifact.version
+
+buildscript {
+   apply from: 'https://raw.githubusercontent.com/MTschach/MssUtils/master/buildscript.gradle'
+}
+
+allprojects {
+   repositories {
+      maven {
+         url "https://oss.sonatype.org/content/repositories/snapshots"
+      }
+      maven {
+         url "https://mvnrepository.com/artifact/de.dfki.mary/marytts-runtime"
+      }
+      maven {
+         url "https://mvnrepository.com/artifact/de.dfki.mary/marytts-lang-de"
+	  }
+   }
+}
+
+//apply plugin: 'de.jjohannes.extra-java-module-info'
+/*
+extraJavaModuleInfo {
+   automaticModule('jakarta.activation-2.0.1.jar', '')
+   automaticModule('jakarta.activation-api.2.1.0.jar', '')
+   automaticModule('jakarta.annotation-api.2.0.0.jar', '')
+   automaticModule('jakarta.inject-api.2.0.0.jar', '')
+   automaticModule('jakarta.mail.2.0.1.jar', '')
+   automaticModule('jakarta.validation-api-3.0.0.jar', '')
+   automaticModule('jakarta.ws.rs-api-3.0.0.jar', '')
+   automaticModule('jakarta.xml.bind-api-4.0.0.jar', '')
+}
+*/
+
+
+configurations {
+   genClasses
+   implementation
+   testImplementation.extendsFrom implementation
+}
+
+
+dependencies {
+   implementation       project(':MssAutoLogoutShared')
+   implementation       group: 'Mss'                                          , name: 'MssUtils'                           , version: 'latest.release'
+   implementation       group: 'Mss'                                          , name: 'MssConfigTools'                     , version: 'latest.release'
+   implementation       group: 'Mss'                                          , name: 'MssNetUtils'                        , version: 'latest.release'
+   implementation       (group: 'org.apache.logging.log4j'                     , name: 'log4j-core'                      , version: "${loggingVersion}") { force = true }
+   implementation       (group: 'org.apache.logging.log4j'                     , name: 'log4j-api'                       , version: "${loggingVersion}") { force = true }
+   implementation       group: 'javax.ws.rs'                                  , name: 'javax.ws.rs-api'                    , version: "${javaxRsApiVersion}"
+   implementation       group: 'org.codehaus.jackson'                         , name: 'jackson-mapper-asl'                 , version: "${jacksonMapperVersion}"
+   implementation       group: 'jakarta.servlet'                              , name: 'jakarta.servlet-api'                , version: "${jakartaServletVersion}"
+   implementation       group: 'commons-cli'                                  , name: 'commons-cli'                        , version: "${commonsCliVersion}"
+   implementation       group: 'org.xerial'                                   , name: 'sqlite-jdbc'                     , version: "${sqliteVersion}"
+   implementation        group: 'org.eclipse.jetty'                           , name: 'jetty-servlet'                   , version: "${jettyVersion}"
+   implementation        group: 'org.eclipse.jetty'                           , name: 'jetty-server'                    , version: "${jettyVersion}"
+   implementation        group: 'org.eclipse.jetty'                           , name: 'jetty-http'                      , version: "${jettyVersion}"
+   
+   testImplementation   group: 'org.junit.jupiter'                            , name: 'junit-jupiter-engine'               , version: "${junitVersion}"
+   testImplementation   group: 'org.powermock'                                , name: 'powermock-module-junit4'            , version: "${powerMockVersion}"
+   testImplementation   group: 'org.powermock'                                , name: 'powermock-api-easymock'             , version: "${powerMockVersion}"
+}
+
+sourceSets {
+   main {
+      java {
+         srcDir 'src'
+      }
+   }
+   
+   test {
+      java {
+         srcDir 'test'
+      }
+   }
+}
+
+compileJava.dependsOn ':MssAutoLogoutShared:build'
+
+def requiredLibs= ['shared.jar']
+
+jar {
+   duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+   manifest {
+      attributes "Main-Class": "de.mss.autologout.server.AutoLogoutServer"
+   }
+   baseName = 'AutoLogoutServer'
+   from {
+      configurations.runtimeClasspath.collect {
+            it.isDirectory() ? it : zipTree(it)
+      }
+   }
+}

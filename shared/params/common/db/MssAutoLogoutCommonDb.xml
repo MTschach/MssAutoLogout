@@ -1,0 +1,8 @@
+<classes>
+   <class name="UserConfig" package="de.mss.autologout.common.db.param" implements="java.io.Serializable" version="123454576865">
+      <variable name="username"              type="String"           value="null" />
+      <variable name="dailyValue"            type="Integer"          value="null" />
+      <variable name="weeklyValue"           type="Integer"          value="null" />
+      <variable name="workingTimes"          type="java.util.List&lt;de.mss.autologout.client.param.WorkingTime&gt;" value="null" />
+   </class>
+</classes>

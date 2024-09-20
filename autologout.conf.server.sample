@@ -14,9 +14,10 @@
          </sampleuser1>
          <sampleuser2>// without timer
             <minutes>
-               <daily>-1</daily>
-               <weekly>-1</weekly>
+               <daily>60</daily>
+               <weekly>400</weekly>
             </minutes>
+            <disabled>true</disabled>
          </sampleuser2>
       </autologout>
    </mss>

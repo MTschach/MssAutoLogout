@@ -16,3 +16,14 @@ include 'services:webservice'
 */
 
 rootProject.name = 'AutoLogout'
+include 'shared'
+include 'clientlib'
+include 'server'
+include 'client'
+include 'admin'
+
+project(':shared').name = 'MssAutoLogoutShared'
+project(':clientlib').name = 'MssAutoLogoutClientLib'
+project(':server').name = 'MssAutoLogoutServer'
+project(':client').name = 'MssAutoLogoutClient'
+project(':admin').name = 'MssAutoLogoutAdmin'

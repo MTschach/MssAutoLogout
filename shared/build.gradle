@@ -1,0 +1,116 @@
+apply plugin: 'java-library'
+apply plugin: 'eclipse'
+
+apply from: 'https://raw.githubusercontent.com/MTschach/MssUtils/master/artifactory.gradle'
+
+apply from: 'https://raw.githubusercontent.com/MTschach/MssUtils/master/eclipse.gradle'
+
+
+def artifact = new Properties()
+//artifact.load(new FileInputStream("${project.projectDir}${File.separator}..${File.separator}deploy.settings"))
+
+version = artifact.version
+
+buildscript {
+   apply from: 'https://raw.githubusercontent.com/MTschach/MssUtils/master/buildscript.gradle'
+}
+
+allprojects {
+   repositories {
+      maven {
+         url "https://oss.sonatype.org/content/repositories/snapshots"
+      }
+      maven {
+         url "https://mvnrepository.com/artifact/de.dfki.mary/marytts-runtime"
+      }
+      maven {
+         url "https://mvnrepository.com/artifact/de.dfki.mary/marytts-lang-de"
+	  }
+   }
+}
+
+
+configurations {
+   genClasses
+   implementation
+   testImplementation.extendsFrom implementation
+}
+
+
+sourceSets {
+   main {
+      java {
+         srcDir 'src'
+         srcDir 'gen'
+      }
+   }
+   
+   test {
+      java {
+         srcDir 'test'
+      }
+   }
+}
+
+dependencies {
+   implementation       group: 'Mss'                                          , name: 'MssUtils'                        , version: 'latest.release'
+   implementation       group: 'Mss'                                          , name: 'MssNetUtils'                     , version: 'latest.release'
+   implementation       group: 'javax.ws.rs'                                  , name: 'javax.ws.rs-api'                 , version: "${javaxRsApiVersion}"
+   implementation      (group: 'org.eclipse.jetty'                            , name: 'jetty-servlet'                   , version: "${jettyVersion}") { force = true }
+   implementation      (group: 'org.eclipse.jetty'                            , name: 'jetty-server'                    , version: "${jettyVersion}") { force = true }
+   implementation      (group: 'org.eclipse.jetty'                            , name: 'jetty-http'                      , version: "${jettyVersion}") { force = true }
+   implementation      (group: 'org.apache.logging.log4j'                     , name: 'log4j-core'                      , version: "${loggingVersion}") { force = true }
+   implementation      (group: 'org.apache.logging.log4j'                     , name: 'log4j-api'                       , version: "${loggingVersion}") { force = true }
+   implementation        group: 'com.fasterxml.jackson.core'                  , name: 'jackson-core'                    , version: "${jacksonVersion}"
+   implementation        group: 'com.fasterxml.jackson.core'                  , name: 'jackson-databind'                , version: "${jacksonVersion}"
+   implementation        group: 'com.fasterxml.jackson.core'                  , name: 'jackson-annotations'             , version: "${jacksonVersion}"
+   
+   testImplementation   group: 'org.junit.jupiter'                            , name: 'junit-jupiter-engine'            , version: "${junitVersion}"
+   testImplementation   group: 'org.powermock'                                , name: 'powermock-module-junit4'         , version: "${powerMockVersion}"
+   testImplementation   group: 'org.powermock'                                , name: 'powermock-api-easymock'          , version: "${powerMockVersion}"
+   testImplementation   group: 'org.xerial'                                   , name: 'sqlite-jdbc'                     , version: "${sqliteVersion}"
+   
+   genClasses           group: 'Mss'                                          , name: 'MssXml2Class'                    , version: 'latest.release'
+}
+
+jar {
+   from(sourceSets.main.output)
+}
+
+compileJava.dependsOn ('genClasses')
+
+task genClasses {
+   dependsOn ('genParams');
+   dependsOn ('genDbParams');
+}
+
+
+task genParams(type:JavaExec) {
+   group 'gen'
+   workingDir = "${rootDir}"
+   main      = "de.mss.xml2class.Xml2Class"
+   classpath {[
+      configurations.genClasses
+   ]}
+   args '-t', 'templates/client', '-i', 'shared/params/client', '-o', 'shared/gen'
+}
+
+
+task genDbParams(type:JavaExec) {
+   group 'gen'
+   workingDir = "${rootDir}"
+   main      = "de.mss.xml2class.Xml2Class"
+   classpath {[
+      configurations.genClasses
+   ]}
+   args '-t', 'templates/db', '-i', 'shared/params/common/db', '-o', 'shared/gen'
+}
+
+
+clean.doFirst {
+   delete "${rootDir}/shared/gen"
+}
+
+jar {
+   baseName = 'shared'
+}

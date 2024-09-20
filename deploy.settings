@@ -1,0 +1,7 @@
+version = 0.0.2
+groupId = Mss
+artifactId = MssAutologout
+licenses = ['Apache 2'] // or something else 
+id = MssAutologout
+gitUrl = https://github.com/mtschach/MssAutologout
+repoUrl = https://mtschach

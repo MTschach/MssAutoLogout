@@ -1,0 +1,65 @@
+apply plugin: 'java'
+apply plugin: 'application'
+apply plugin: 'eclipse'
+
+//apply from: 'https://raw.githubusercontent.com/MTschach/MssUtils/master/deploy.gradle'
+
+apply from: 'https://raw.githubusercontent.com/MTschach/MssUtils/master/artifactory.gradle'
+
+apply from: 'https://raw.githubusercontent.com/MTschach/MssUtils/master/eclipse.gradle'
+
+
+def artifact = new Properties()
+//artifact.load(new FileInputStream("${project.projectDir}${File.separator}..${File.separator}deploy.settings"))
+
+version = artifact.version
+
+buildscript {
+   apply from: 'https://raw.githubusercontent.com/MTschach/MssUtils/master/buildscript.gradle'
+}
+
+
+configurations {
+   genClasses
+   implementation
+   testImplementation.extendsFrom implementation
+}
+
+
+dependencies {
+   implementation       project(':MssAutoLogoutShared')
+   implementation       project(':MssAutoLogoutClientLib')
+   implementation       group: 'Mss'                                          , name: 'MssUtils'                        , version: 'latest.release'
+   implementation       group: 'Mss'                                          , name: 'MssConfigTools'                  , version: 'latest.release'
+   implementation       group: 'Mss'                                          , name: 'MssNetUtils'                     , version: 'latest.release'
+   implementation       group: 'org.apache.commons'                           , name: 'commons-lang3'                   , version: "${commonsLangVersion}"
+   implementation       group: 'commons-beanutils'                            , name: 'commons-beanutils'               , version: "${commonsBeanutilsVersion}"
+   implementation       group: 'commons-cli'                                  , name: 'commons-cli'                     , version: "${commonsCliVersion}"
+}
+
+sourceSets {
+   main {
+      java {
+         srcDir 'src'
+      }
+   }
+   
+   test {
+      java {
+         srcDir 'test'
+      }
+   }
+}
+
+compileJava.dependsOn ':MssAutoLogoutClientLib:build'
+
+jar {
+   duplicatesStrategy = DuplicatesStrategy.INCLUDE
+   from {
+      configurations.runtimeClasspath.collect {
+            it.isDirectory() ? it : zipTree(it)
+      }
+   }
+}
+
+
