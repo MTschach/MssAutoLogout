@@ -12,12 +12,14 @@
 /*.log
 /log/
 /gen/
-*/bin/
-*/build/
-*/gen/
-*/.classpath
-*/.project
-*/.settings/
-*/.gradle/
-*/.gitignore
+/**/bin/
+/**/build/
+/**/gen/
+/**/.classpath
+/**/.project
+/**/.settings/
+/**/.gradle/
+/**/.gitignore
+/**/log/
+/**/*.sqlite3
 
