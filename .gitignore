@@ -11,5 +11,13 @@
 /*.sqlite3
 /*.log
 /log/
-gen/
+/gen/
+*/bin/
+*/build/
+*/gen/
+*/.classpath
+*/.project
+*/.settings/
+*/.gradle/
+*/.gitignore
 

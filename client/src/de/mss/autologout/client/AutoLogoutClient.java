@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -24,14 +23,8 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import de.mss.autologout.client.param.AddUserBody;
-import de.mss.autologout.client.param.ChangeUserBody;
 import de.mss.autologout.client.param.CheckCounterRequest;
 import de.mss.autologout.client.param.CheckCounterResponse;
-import de.mss.autologout.client.param.CounterMaxValues;
-import de.mss.autologout.client.param.CounterValues;
-import de.mss.autologout.client.param.GetAllCounterRequest;
-import de.mss.autologout.client.param.GetAllCounterResponse;
 import de.mss.autologout.client.param.GetCounterRequest;
 import de.mss.autologout.client.param.GetCounterResponse;
 import de.mss.autologout.client.param.ListUsersRequest;
@@ -41,14 +34,10 @@ import de.mss.autologout.common.db.param.UserConfig;
 import de.mss.autologout.counter.AutoLogoutCounter;
 import de.mss.autologout.counter.LogoutCounter;
 import de.mss.autologout.counter.WorkingTimeChecker;
-import de.mss.autologout.db.UserDb;
 import de.mss.autologout.db.WorkDb;
-import de.mss.autologout.defs.Defs;
-import de.mss.autologout.exception.ErrorCodes;
 import de.mss.configtools.ConfigFile;
 import de.mss.configtools.XmlConfigFile;
 import de.mss.net.webservice.WebServiceResponseChecks;
-import de.mss.utils.DateTimeTools;
 import de.mss.utils.Tools;
 import de.mss.utils.exception.MssException;
 import de.mss.utils.os.OsType;
@@ -95,16 +84,9 @@ public class AutoLogoutClient {
    private boolean    isRunning     = true;
 
 
-   private AutoLogoutCounter localCounter      = new AutoLogoutCounter();
+   private AutoLogoutCounter localCounter = new AutoLogoutCounter();
 
-   private UserDb            userDb            = null;
-
-   private boolean           localCounterUsed  = false;
-   private boolean           userDbInitialized = false;
-   private boolean           workDbInitialized = false;
-
-
-   private WorkDb workDb = null;
+   private WorkDb            workDb       = null;
 
 
    private TextToSpeech tts = null;
@@ -164,79 +146,6 @@ public class AutoLogoutClient {
    }
 
 
-   private boolean checkCounterOld(String loggingId) {
-      if (!Tools.isSet(this.lastUserName)) {
-         return true;
-      }
-
-      final CheckCounterRequest request = new CheckCounterRequest();
-      request.setUserName(this.lastUserName);
-      request.setCheckInterval(Integer.valueOf(this.checkInterval));
-      if (this.localCounterUsed) {
-         request.setCurrentCounter(this.localCounter.getDailyCounter().getCurrentMinutes());
-      }
-
-      final CheckCounterResponse localResponse = new CheckCounterResponse();
-      if (!checkWorkingTime(loggingId, localResponse)) {
-         if (!checkTimer(loggingId, this.localCounter.getWeeklyCounter(), localResponse)) {
-            checkTimer(loggingId, this.localCounter.getDailyCounter(), localResponse);
-         }
-      }
-      this.localCounter.getWeeklyCounter().addSeconds(this.checkInterval);
-      this.localCounter.getDailyCounter().addSeconds(this.checkInterval);
-
-      this.localCounterUsed = false;
-
-      CheckCounterResponse response = null;
-      try {
-         response = MssAutoLogoutClient.getInstance(getConfig()).checkCounter(loggingId, request);
-         if (response.getErrorCode() == 0) {
-            if (response.getCounterValue() != null) {
-               if (this.localCounter.getDailyCounter().getCurrentSeconds() < response.getCounterValue()) {
-                  final int diff = response.getCounterValue() - this.localCounter.getDailyCounter().getCurrentSeconds();
-                  this.localCounter.getDailyCounter().addSeconds(diff);
-                  this.localCounter.getWeeklyCounter().addSeconds(diff);
-               }
-            }
-         } else {
-            this.localCounterUsed = true;
-         }
-      }
-      catch (final Exception e) {
-         this.localCounterUsed = true;
-         getLogger().error(Tools.formatLoggingId(loggingId) + "using local counter", e);
-      }
-
-      try {
-         this.workDb.saveTime(this.lastUserName, this.localCounter);
-      }
-      catch (final Exception e) {
-         getLogger().error(Tools.formatLoggingId(loggingId) + "could not save local counter", e);
-      }
-
-      if (!WebServiceResponseChecks.isResponseOk(response)) {
-         if (response == null) {
-            response = localResponse;
-         }
-      }
-
-      if (response == null) {
-         return false;
-      }
-
-      if (Tools.isSet(response.getMessage())) {
-         showInfo(loggingId, response.getHeadLine(), response.getMessage());
-         speak(response.getSpokenMessage());
-      }
-
-      if ((response.getForceLogout() != null) && (response.getForceLogout().compareTo(Boolean.TRUE) == 0)) {
-         logout(loggingId, 10);
-      }
-
-      return true;
-   }
-
-
    private void checkForUser(String loggingId) {
       final String user = getLoggedInUser(loggingId);
       if (!Tools.isSet(user)) {
@@ -258,8 +167,6 @@ public class AutoLogoutClient {
       this.localCounter = new AutoLogoutCounter();
 
       try {
-         loadFromLocalDb(loggingId, user);
-
          final ListUsersRequest luReq = new ListUsersRequest();
          final ListUsersResponse luResp = MssAutoLogoutClient.getInstance(getConfig()).listUsers(loggingId, luReq);
          if ((luResp != null) && (luResp.getUserlist() != null)) {
@@ -268,12 +175,6 @@ public class AutoLogoutClient {
                   this.localCounter.getDailyCounter().setMaxMinutes(u.getDailyValue());
                   this.localCounter.getWeeklyCounter().setMaxMinutes(u.getWeeklyValue());
                   this.localCounter.setWorkingTimeChecker(new WorkingTimeChecker(u.getWorkingTimes()));
-                  final ChangeUserBody data = new ChangeUserBody();
-                  data.setCounterMaxValues(new CounterMaxValues());
-                  data.getCounterMaxValues().setDailyMinutes(u.getDailyValue());
-                  data.getCounterMaxValues().setWeeklyMinutes(u.getWeeklyValue());
-                  data.setWorkingTimes(u.getWorkingTimes());
-                  this.userDb.changeUser(this.lastUserName, data);
                }
             }
          }
@@ -297,71 +198,14 @@ public class AutoLogoutClient {
          this.localCounter.setDailycounter(new LogoutCounter(30, "tägliche"));
          this.localCounter.setWeeklyCounter(new LogoutCounter(210, "wöchentliche"));
          this.localCounter.setWorkingTimeChecker(new WorkingTimeChecker());
+         this.localCounter.setCounterValues(new HashMap<>());
       }
-
-      getLogger().debug(Tools.formatLoggingId(loggingId) + "localCounter " + this.localCounter.toString());
-   }
-
-
-   private void checkForUserOld(String loggingId) {
-      final String user = getLoggedInUser(loggingId);
-      if (!Tools.isSet(user)) {
-         this.lastUserName = null;
-         if (!noUserNameLogged) {
-            getLogger().debug(Tools.formatLoggingId(loggingId) + "no valid username found");
-         }
-         noUserNameLogged = true;
-         return;
-      }
-
-      noUserNameLogged = false;
-      if (user.equals(this.lastUserName)) {
-         return;
-      }
-      getLogger().debug(Tools.formatLoggingId(loggingId) + "checking for user " + user);
-
-      this.lastUserName = user;
-      this.localCounter = new AutoLogoutCounter();
 
       try {
-         final ListUsersRequest luReq = new ListUsersRequest();
-         final ListUsersResponse luResp = MssAutoLogoutClient.getInstance(getConfig()).listUsers(loggingId, luReq);
-         if (!WebServiceResponseChecks.isResponseOk(luResp)) {
-            loadFromLocalDb(loggingId, user);
-         } else {
-            boolean found = false;
-            for (final UserConfig u : luResp.getUserlist()) {
-               if (this.lastUserName.equals(u.getUsername())) {
-                  found = true;
-                  this.localCounter.setDailycounter(new LogoutCounter(u.getDailyValue(), "tägliche"));
-                  this.localCounter.setWeeklyCounter(new LogoutCounter(u.getWeeklyValue(), "wöchentliche"));
-                  this.localCounter.setWorkingTimeChecker(new WorkingTimeChecker(u.getWorkingTimes()));
-
-                  getCurrentValuesForUser(loggingId, u.getUsername());
-                  break;
-               }
-            }
-            if (!found) {
-               loadFromLocalDb(loggingId, user);
-            }
-         }
-
-         final GetCounterRequest request = new GetCounterRequest();
-         request.setUserName(user);
-         request.setLoggingId(loggingId);
-         final GetCounterResponse response = MssAutoLogoutClient.getInstance(getConfig()).getCounter(loggingId, request);
-
-         if (WebServiceResponseChecks.isResponseOk(response)) {
-            if (response.getCounterValues() != null) {
-               this.localCounter.setCounterValues(response.getCounterValues().getValues());
-            }
-         }
+         this.workDb.loadUser(user, this.localCounter);
       }
-      catch (final Exception e) {
-         getLogger().error(Tools.formatLoggingId(loggingId) + "using default values", e);
-         this.localCounter.setDailycounter(new LogoutCounter(30, "tägliche"));
-         this.localCounter.setWeeklyCounter(new LogoutCounter(210, "wöchentliche"));
-         this.localCounter.setWorkingTimeChecker(new WorkingTimeChecker());
+      catch (final MssException e) {
+         e.printStackTrace();
       }
 
       getLogger().debug(Tools.formatLoggingId(loggingId) + "localCounter " + this.localCounter.toString());
@@ -444,9 +288,6 @@ public class AutoLogoutClient {
 
 
    private void doAction(String loggingId) {
-      syncUserDb(loggingId);
-      //      syncWorkDb(loggingId);
-
       checkForUser(loggingId);
 
       checkSudoes(loggingId);
@@ -500,61 +341,6 @@ public class AutoLogoutClient {
 
    public ConfigFile getConfig() {
       return this.cfgFile;
-   }
-
-
-   private void getCurrentValuesForUser(String loggingId, String username) {
-      final GetCounterRequest req = new GetCounterRequest();
-      req.setLoggingId(loggingId);
-      req.setUserName(username);
-      req.setTimeFrame(7);
-
-      this.localCounter.getDailyCounter().reset();
-      this.localCounter.getWeeklyCounter().reset();
-
-      try {
-         final GetCounterResponse resp = MssAutoLogoutClient.getInstance(this.cfgFile).getCounter(loggingId, req);
-         if ((resp == null) || (resp.getCounterValues() == null) || (resp.getCounterValues().getValues() == null)) {
-            throw new MssException(ErrorCodes.ERROR_LOADING_USER, "could not load user values");
-         }
-
-         final String today = Defs.DB_DATE_FORMAT.format(new java.util.Date());
-         BigInteger sum = BigInteger.ZERO;
-         for (final Entry<String, BigInteger> e : resp.getCounterValues().getValues().entrySet()) {
-            if (today.equals(e.getKey())) {
-               this.localCounter.getDailyCounter().addMinutes(e.getValue().intValue());
-            }
-            sum = sum.add(e.getValue());
-         }
-         this.localCounter.getWeeklyCounter().addMinutes(sum.intValue());
-      }
-      catch (final MssException e) {
-         getLogger().error(Tools.formatLoggingId(loggingId), e);
-         getCurrentValuesForUSerFromLocalDb(loggingId, username);
-      }
-   }
-
-
-   private void getCurrentValuesForUSerFromLocalDb(String loggingId, String username) {
-      final Date d = new Date();
-      try {
-         int sum = this.workDb.getDailyValue(username, d);
-         this.localCounter.getDailyCounter().addMinutes(sum);
-         this.localCounter.setCounterValues(new HashMap<>());
-         this.localCounter.getCounterValues().put(Defs.DB_DATE_FORMAT.format(d), BigInteger.valueOf(sum));
-
-         for (int i = 1; i <= 7; i++ ) {
-            final int val = this.workDb.getDailyValue(username, DateTimeTools.addDate(d, -i, Calendar.DAY_OF_MONTH));
-            this.localCounter
-                  .getCounterValues()
-                  .put(Defs.DB_DATE_FORMAT.format(DateTimeTools.addDate(d, -i, Calendar.DAY_OF_MONTH)), BigInteger.valueOf(sum));
-            sum += val;
-         }
-         this.localCounter.getWeeklyCounter().addMinutes(sum);
-      }
-      catch (final MssException e) {
-         getLogger().error(Tools.formatLoggingId(loggingId), e);
-      }
    }
 
 
@@ -633,9 +419,9 @@ public class AutoLogoutClient {
       confFile.setRequired(false);
       cmdArgs.addOption(confFile);
 
-      final Option asDaemon = new Option("d", CMD_OPTION_AS_DAEMON, false, "run as daemon");
-      asDaemon.setRequired(false);
-      cmdArgs.addOption(asDaemon);
+      final Option asDaemonOption = new Option("d", CMD_OPTION_AS_DAEMON, false, "run as daemon");
+      asDaemonOption.setRequired(false);
+      cmdArgs.addOption(asDaemonOption);
 
       final CommandLineParser parser = new DefaultParser();
       final CommandLine cmd = parser.parse(cmdArgs, args);
@@ -661,12 +447,7 @@ public class AutoLogoutClient {
       this.tts = initTts();
 
       try {
-         this.userDb = new UserDb(this.cfgFile.getValue("de.mss.autologout.userdb", "user.sqlite3"));
          this.workDb = new WorkDb(this.cfgFile.getValue("de.mss.autologout.workdb", "work.sqlite3"));
-         final String loggingId = UUID.randomUUID().toString();
-
-         syncUserDb(loggingId);
-         //         syncWorkDb(loggingId);
       }
       catch (final Exception e) {
          e.printStackTrace();
@@ -700,15 +481,6 @@ public class AutoLogoutClient {
          getLogger().error("error creating TTS-Interface", e);
       }
       return null;
-   }
-
-
-   private void loadFromLocalDb(String loggingId, final String user) throws MssException {
-      final AutoLogoutCounter alc = this.userDb.loadUser(user);
-      this.localCounter.setDailycounter(alc.getDailyCounter());
-      this.localCounter.setWeeklyCounter(alc.getWeeklyCounter());
-      this.localCounter.setWorkingTimeChecker(alc.getWorkingTimeChecker());
-      getCurrentValuesForUSerFromLocalDb(loggingId, user);
    }
 
 
@@ -911,71 +683,6 @@ public class AutoLogoutClient {
 
    public void stop() {
       this.isRunning = false;
-   }
-
-
-   private boolean syncUserDb(String loggingId) {
-      if (this.userDbInitialized) {
-         return true;
-      }
-
-      try {
-         final ListUsersResponse users = MssAutoLogoutClient.getInstance(this.cfgFile).listUsers(loggingId, new ListUsersRequest());
-         if ((users == null) || (users.getUserlist() == null)) {
-            return false;
-         }
-         for (final UserConfig uc : users.getUserlist()) {
-            if (this.userDb.isUserPresent(uc.getUsername())) {
-               final ChangeUserBody data = new ChangeUserBody();
-               data.setCounterMaxValues(new CounterMaxValues());
-               data.getCounterMaxValues().setDailyMinutes(uc.getDailyValue());
-               data.getCounterMaxValues().setWeeklyMinutes(uc.getWeeklyValue());
-               data.setWorkingTimes(uc.getWorkingTimes());
-               this.userDb.changeUser(uc.getUsername(), data);
-            } else {
-               final AddUserBody data = new AddUserBody();
-               data.setCounterMaxValues(new CounterMaxValues());
-               data.getCounterMaxValues().setDailyMinutes(uc.getDailyValue());
-               data.getCounterMaxValues().setWeeklyMinutes(uc.getWeeklyValue());
-               data.setUserName(uc.getUsername());
-               data.setWorkingTimes(uc.getWorkingTimes());
-               this.userDb.addUser(data);
-            }
-         }
-      }
-      catch (final Exception e) {
-         getLogger().error(loggingId, e);
-         return false;
-      }
-
-      this.userDbInitialized = true;
-      return true;
-   }
-
-
-   private boolean syncWorkDb(String loggingId) {
-      if (this.workDbInitialized) {
-         return true;
-      }
-
-      try {
-         final GetAllCounterResponse counters = MssAutoLogoutClient.getInstance(this.cfgFile).getAllCounters(loggingId, new GetAllCounterRequest());
-         if ((counters == null) || (counters.getCounterValues() == null)) {
-            return false;
-         }
-         for (final Entry<String, CounterValues> cv : counters.getCounterValues().entrySet()) {
-            for (final Entry<String, BigInteger> c : cv.getValue().getValues().entrySet()) {
-               this.workDb.saveTime(cv.getKey(), c.getKey(), c.getValue().intValue());
-            }
-         }
-      }
-      catch (final Exception e) {
-         getLogger().error(loggingId, e);
-         return false;
-      }
-
-      this.workDbInitialized = true;
-      return true;
    }
 
 

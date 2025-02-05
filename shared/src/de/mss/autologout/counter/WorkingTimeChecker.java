@@ -16,23 +16,24 @@ import de.mss.utils.Tools;
 
 public class WorkingTimeChecker {
 
-   private final int               firstInfo  = 10 * 60;
-   private final int               secondInfo = 5 * 60;
-   private final List<WorkingTime> workingTimes;
+   private final int         firstInfo  = 10 * 60;
+   private final int         secondInfo = 5 * 60;
+   private List<WorkingTime> workingTimes;
 
    public WorkingTimeChecker() {
-      this.workingTimes = new ArrayList<>();
-      for (final Weekday w : Weekday.values()) {
-         final WorkingTime wt = new WorkingTime();
-         wt.setFrom("07:00");
-         wt.setUntil("20:00");
-         wt.setWeekday(w);
-      }
+      initWorkingTimes();
    }
 
 
    public WorkingTimeChecker(List<WorkingTime> wt) {
       this.workingTimes = wt;
+      if (this.workingTimes == null) {
+         initWorkingTimes();
+      }
+
+      for (final Weekday w : Weekday.values()) {
+         check(w);
+      }
    }
 
 
@@ -87,6 +88,17 @@ public class WorkingTimeChecker {
    }
 
 
+   private void check(Weekday w) {
+      for (final WorkingTime wt : this.workingTimes) {
+         if (wt.getWeekday() == w) {
+            return;
+         }
+      }
+
+      this.workingTimes.add(initWorkingTime(w));
+   }
+
+
    private WorkingTime getCurrentWorkingTime(GregorianCalendar gc) {
       WorkingTime ret = null;
 
@@ -120,6 +132,23 @@ public class WorkingTimeChecker {
 
    public List<WorkingTime> getWorkingTimes() {
       return this.workingTimes;
+   }
+
+
+   private WorkingTime initWorkingTime(Weekday w) {
+      final WorkingTime wt = new WorkingTime();
+      wt.setFrom("10:00");
+      wt.setUntil("18:30");
+      wt.setWeekday(w);
+      return wt;
+   }
+
+
+   private void initWorkingTimes() {
+      this.workingTimes = new ArrayList<>();
+      for (final Weekday w : Weekday.values()) {
+         this.workingTimes.add(initWorkingTime(w));
+      }
    }
 
 

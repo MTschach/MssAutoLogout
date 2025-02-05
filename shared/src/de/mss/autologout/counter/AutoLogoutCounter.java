@@ -17,7 +17,10 @@ public class AutoLogoutCounter {
    private boolean                 disabled       = false;
    private WorkingTimeChecker      workingTimeChecker;
 
-   public AutoLogoutCounter() {}
+   public AutoLogoutCounter() {
+      setDailycounter(null);
+      setWeeklyCounter(null);
+   }
 
 
    public AutoLogoutCounter(LogoutCounter dailyCounter, LogoutCounter weeklyCounter) {
@@ -87,7 +90,7 @@ public class AutoLogoutCounter {
 
 
    public void setDailycounter(LogoutCounter d) {
-      this.dailyCounter = d;
+      this.dailyCounter = d != null ? d : new LogoutCounter(30, "täglich");
    }
 
 
@@ -102,7 +105,7 @@ public class AutoLogoutCounter {
 
 
    public void setWeeklyCounter(LogoutCounter w) {
-      this.weeklyCounter = w;
+      this.weeklyCounter = w != null ? w : new LogoutCounter(210, "wöchentlich");
    }
 
 
